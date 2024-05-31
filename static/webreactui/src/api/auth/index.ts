@@ -1,10 +1,10 @@
-import { RestClient } from "..";
-import { User } from "@api";
+import { RestClient, User } from "..";
+import { LogInResponse } from "@api";
 export class AuthModule {
   constructor(private readonly client: RestClient) { }
 
-  async login(email: string, password: string): Promise<User> {
-    return await this.client.post<User>('api/login.php', {
+  async login(email: string, password: string): Promise<LogInResponse> {
+    const res = await this.client.post<LogInResponse>('api/login.php', {
       email,
       password: wp.encSync(password, "hex"),
       time: new Date().getTime() / 1000,
@@ -14,6 +14,12 @@ export class AuthModule {
       ClientType: "webui",
       PS: "W0RFXVN0ZXZlIGxpa2VzIGJpZyBidXR0cw==" // anti-cheat data
     });
+    this.client.setAccountId(res.id);
+    this.client.setNonce(res.Nonce);
+    return res;
+  }
+  async getUserInfo(): Promise<User> {
+    return await this.client.get<User>('custom/getUserInfo');
   }
 }
 declare var wp: any;

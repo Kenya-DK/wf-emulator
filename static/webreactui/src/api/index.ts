@@ -7,6 +7,8 @@ import { EventOperation } from "./types";
 export class RestClient {
   private client: AxiosInstance;
   public listener = new ComposedListener();
+  private accountId: string | undefined;
+  private nonce: number | undefined;
   constructor(private baseUrl: string) {
     this.client = axios.create({ baseURL: baseUrl });
     this.auth = new AuthModule(this);
@@ -27,10 +29,12 @@ export class RestClient {
 
 
   // Methods  
-  private async sendRequest<T>(url: string, method: string, body?: any, _config: AxiosRequestConfig = {}): Promise<T> {
-
+  private async sendRequest<T>(url: string, method: string, parameters?: string[], body?: any, _config: AxiosRequestConfig = {}): Promise<T> {
+    if (!parameters) parameters = [];
+    parameters.push(`accountId=${this.accountId}`);
+    parameters.push(`nonce=${this.nonce}`);
     const { data } = await this.client.request<T>({
-      url,
+      url: `${url}${(parameters && parameters.length > 0) ? `?${parameters.join("&")}` : ""}`,
       method,
       headers: {
         'Content-Type': 'text/plain',
@@ -43,23 +47,22 @@ export class RestClient {
 
   async get<T>(path: string, parameters?: string[], body?: { [key: string]: any }): Promise<T> {
     const url = `${this.baseUrl}/${path}${(parameters && parameters.length > 0) ? `?${parameters.join("&")}` : ""}`;
-    return await this.sendRequest<T>(url, "GET", body);
+    return await this.sendRequest<T>(url, "GET", parameters, body);
   }
-
 
   async put<T>(path: string, body: { [key: string]: any }): Promise<T> {
     const url = `${this.baseUrl}/${path}`;
-    return await this.sendRequest<T>(url, "PUT", body);
+    return await this.sendRequest<T>(url, "PUT", undefined, body);
   }
 
   async post<T>(path: string, body?: { [key: string]: any }, parameters?: string[]): Promise<T> {
-    const url = `${this.baseUrl}/${path}${(parameters && parameters.length > 0) ? `?${parameters.join("&")}` : ""}`;
-    return await this.sendRequest<T>(url, "POST", body);
+    const url = `${this.baseUrl}/${path}`;
+    return await this.sendRequest<T>(url, "POST", parameters, body);
   }
 
   async delete<T>(path: string, body?: { [key: string]: any }): Promise<T> {
     const url = `${this.baseUrl}/${path}`;
-    return await this.sendRequest<T>(url, "DELETE", body);
+    return await this.sendRequest<T>(url, "DELETE", undefined, body);
   }
 
   objectToParameters(obj: any): Array<string> {
@@ -80,7 +83,13 @@ export class RestClient {
     return searchParams;
   }
 
+  public setAccountId(accountId: string) {
+    this.accountId = accountId;
+  }
 
+  public setNonce(nonce: number) {
+    this.nonce = nonce;
+  }
   // Modules
   auth: AuthModule;
 }

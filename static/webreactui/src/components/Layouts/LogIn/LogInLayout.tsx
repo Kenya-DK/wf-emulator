@@ -12,7 +12,7 @@ export function LogInLayout() {
   // States
   const navigate = useNavigate();
   const links = [
-    { align: 'top', link: "/", icon: <FontAwesomeIcon icon={faHome} />, label: useTranslateNavBar("home"), onClick: (e: NavbarLinkProps) => handleNavigate(e) },
+    { align: 'top', link: "/webui", icon: <FontAwesomeIcon icon={faHome} />, label: useTranslateNavBar("home"), onClick: (e: NavbarLinkProps) => handleNavigate(e) },
   ];
 
   const handleNavigate = (link: NavbarLinkProps) => {

@@ -26,7 +26,7 @@ export function UserMenu() {
 		>
 			<Menu.Target>
 				<Group>
-					{user?.DisplayName}
+					{user?.user_name}
 				</Group>
 			</Menu.Target>
 

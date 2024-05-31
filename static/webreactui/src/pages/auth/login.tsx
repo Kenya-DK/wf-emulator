@@ -31,12 +31,20 @@ export function LoginPage() {
     },
     onSuccess: async (u) => {
       notifications.show({ title: useTranslateSuccess("login.title"), message: useTranslateSuccess("login.message", { name: u.DisplayName }), color: "green.7" });
-      SendDataEvent(Events.UpdateUser, EventOperation.SET, u);
+      getUserInfo.mutate();
     },
     onError: (err) => {
       console.error(err);
       setEmail("");
       setPassword("");
+    }
+  })
+
+  const getUserInfo = useMutation({
+    mutationFn: () => api.auth.getUserInfo(),
+    onSuccess: async (u) => {
+      console.log(u);
+      SendDataEvent(Events.UpdateUser, EventOperation.SET, u);
     }
   })
 
