@@ -35,4 +35,4 @@ const getUserInfoController: RequestHandler = async (req, res) => {
     res.json(userInformation);
 };
 
-export { getUserInfoController as getUsersInfoController };
+export { getUserInfoController };
