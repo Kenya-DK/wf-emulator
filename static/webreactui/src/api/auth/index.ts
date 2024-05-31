@@ -15,9 +15,5 @@ export class AuthModule {
       PS: "W0RFXVN0ZXZlIGxpa2VzIGJpZyBidXR0cw==" // anti-cheat data
     });
   }
-
-  async logout() {
-    return await this.client.post('logout');
-  }
 }
 declare var wp: any;
