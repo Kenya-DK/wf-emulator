@@ -3,6 +3,7 @@ import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import { AuthModule } from "./auth";
 import { ComposedListener } from "@utils";
 import { EventOperation } from "./types";
+import { AppModule } from "./app";
 
 export class RestClient {
   private client: AxiosInstance;
@@ -11,28 +12,18 @@ export class RestClient {
   private nonce: number | undefined;
   constructor(private baseUrl: string) {
     this.client = axios.create({ baseURL: baseUrl });
+    this.app = new AppModule(this);
     this.auth = new AuthModule(this);
-    // this.app = new AppModule(this);
-    // this.auction = new AuctionModule(this);
-    // this.chat = new ChatModule(this);
-    // this.debug = new DebugModule(this);
-    // this.items = new ItemModule(this);
-    // this.live_scraper = new LiveScraperModule(this);
-    // this.order = new OrderModule(this);
-    // this.stock = new StockModule(this);
-    // this.transaction = new TransactionModule(this);
-    // this.events = new EventModule(this);
-    // this.notification = new NotificationModule(this);
-    // this.statistic = new StatisticModule(this);
-    // this.cache = new CacheModule(this);
   }
 
 
   // Methods  
   private async sendRequest<T>(url: string, method: string, parameters?: string[], body?: any, _config: AxiosRequestConfig = {}): Promise<T> {
     if (!parameters) parameters = [];
-    parameters.push(`accountId=${this.accountId}`);
-    parameters.push(`nonce=${this.nonce}`);
+    if (this.accountId)
+      parameters.push(`accountId=${this.accountId}`);
+    if (this.nonce)
+      parameters.push(`nonce=${this.nonce}`);
     const { data } = await this.client.request<T>({
       url: `${url}${(parameters && parameters.length > 0) ? `?${parameters.join("&")}` : ""}`,
       method,
@@ -91,6 +82,7 @@ export class RestClient {
     this.nonce = nonce;
   }
   // Modules
+  app: AppModule;
   auth: AuthModule;
 }
 const OnEvent = <T>(event: string, callback: (data: T) => void) => api.listener.add(event, callback)

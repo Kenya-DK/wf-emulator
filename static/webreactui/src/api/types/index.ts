@@ -3,4 +3,5 @@ export * from './events.enum'
 export * from './user.type'
 export * from './logInResponse.type'
 export * from './wfitems.type'
-
+export * from './config.type'
+export * from './initializeResponds.type'

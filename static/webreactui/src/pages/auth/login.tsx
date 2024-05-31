@@ -43,7 +43,6 @@ export function LoginPage() {
   const getUserInfo = useMutation({
     mutationFn: () => api.auth.getUserInfo(),
     onSuccess: async (u) => {
-      console.log(u);
       SendDataEvent(Events.UpdateUser, EventOperation.SET, u);
     }
   })

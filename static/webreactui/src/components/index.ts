@@ -6,3 +6,4 @@ export * from "./NavbarMinimalColored";
 export * from './Header';
 export * from './UserMenu';
 export * from './TextTranslate';
+export * from './Loading';

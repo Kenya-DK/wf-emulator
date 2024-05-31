@@ -1,6 +1,7 @@
 export enum Events {
   // App
   UpdateAppInfo = "App:UpdateAppInfo",
+  UpdateConfig = "App:UpdateConfig",
 
   // User
   UpdateUser = "User:Update",

@@ -1,17 +1,19 @@
 import express from "express";
-import { getUsersInfoController } from "@/src/controllers/custom/getUserInfoController";
+import { initializeController } from "@/src/controllers/custom/initializeController";
+import { getUserInfoController } from "@/src/controllers/custom/getUserInfoController";
 import { getItemsController } from "@/src/controllers/custom/getItemsController";
 import { createAccountController } from "@/src/controllers/custom/createAccountController";
-// import { updateConfigController } from "@/src/controllers/custom/updateConfigController";
+import { updateConfigController } from "@/src/controllers/custom/updateConfigController";
 import { addItemController } from "@/src/controllers/custom/addItemController";
 
 const customRouter = express.Router();
 
+customRouter.get("/initialize", initializeController);
 customRouter.get("/getItems", getItemsController);
 
 customRouter.post("/createAccount", createAccountController);
-// customRouter.get("/updateConfig", updateConfigController);
-customRouter.get("/getUserInfo", getUsersInfoController);
+customRouter.get("/updateConfig", updateConfigController);
+customRouter.get("/getUserInfo", getUserInfoController);
 customRouter.post("/addItem", addItemController);
 
 export { customRouter };

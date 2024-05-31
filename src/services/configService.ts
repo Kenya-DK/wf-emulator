@@ -26,3 +26,10 @@ interface ILoggerConfig {
 }
 
 export const config: IConfig = rawConfig;
+
+
+export const updateConfig = (newConfig: IConfig) => {
+    Object.assign(config, newConfig);
+    const fs = require("fs");
+    fs.writeFileSync("config.json", JSON.stringify(config, null, 2));
+}
