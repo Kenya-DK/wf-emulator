@@ -1,8 +1,7 @@
 import express from "express";
-
+import cors from "cors";
 import { unknownEndpointHandler } from "@/src/middleware/middleware";
 import { requestLogger } from "@/src/middleware/morgenMiddleware";
-
 import { apiRouter } from "@/src/routes/api";
 //import { testRouter } from "@/src/routes/test";
 import { cacheRouter } from "@/src/routes/cache";
@@ -12,15 +11,16 @@ import { steamPacksController } from "@/src/controllers/misc/steamPacksControlle
 import { customRouter } from "@/src/routes/custom";
 import { dynamicController } from "@/src/routes/dynamic";
 import { statsRouter } from "@/src/routes/stats";
-import { webuiRouter } from "@/src/routes/webui";
 import { connectDatabase } from "@/src/services/mongoService";
 import { registerLogFileCreationListener } from "@/src/utils/logger";
+import { webuiRouter } from "./routes/webui";
 
 void registerLogFileCreationListener();
 void connectDatabase();
 
 const app = express();
 
+app.use(cors());
 app.use(bodyParser.raw());
 app.use(express.json());
 app.use(bodyParser.text());

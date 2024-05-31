@@ -10,7 +10,7 @@ import allShipDecorations from "@/static/fixed_responses/allShipDecorations.json
 import allFlavourItems from "@/static/fixed_responses/allFlavourItems.json";
 import allSkins from "@/static/fixed_responses/allSkins.json";
 import { ILoadoutDatabase } from "@/src/types/saveLoadoutTypes";
-import { IShipInventory, IFlavourItem } from "@/src/types/inventoryTypes/inventoryTypes";
+import { IShipInventory, IFlavourItem, IInventoryDatabase } from "@/src/types/inventoryTypes/inventoryTypes";
 
 const inventoryController: RequestHandler = async (request: Request, response: Response) => {
     let accountId;
@@ -33,7 +33,7 @@ const inventoryController: RequestHandler = async (request: Request, response: R
     }
 
     //TODO: make a function that converts from database representation to client
-    const inventoryJSON = inventory.toJSON();
+    const inventoryJSON = inventory.toJSON() as IInventoryDatabase;
     console.log(inventoryJSON.Ships);
 
     const inventoryResponse = toInventoryResponse(inventoryJSON);

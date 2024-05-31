@@ -17,20 +17,21 @@ webuiRouter.use("/webui", (req, res, next) => {
     next();
 });
 
-// Serve virtual routes
-webuiRouter.get("/webui/inventory", (_req, res) => {
-    res.sendFile(path.join(rootDir, "static/webui/index.html"));
-});
-webuiRouter.get("/webui/mods", (_req, res) => {
-    res.sendFile(path.join(rootDir, "static/webui/index.html"));
-});
-
 // Serve static files
-webuiRouter.use("/webui", express.static(path.join(rootDir, "static/webui")));
-
-// Serve favicon
-webuiRouter.get("/favicon.ico", (_req, res) => {
-    res.sendFile(path.join(rootDir, "static/fixed_responses/favicon.ico"));
+webuiRouter.use((req, res, next) => {
+    // If the request starts with /api, we don't want to serve index.html
+    // because it's an API request. We want to serve the API response.
+    if (!req.path.startsWith("/webui") ||
+        /(.ico|.js|.css|.jpg|.png|.map)$/i.test(req.path)) {
+        next();
+    } else {
+        res.header('Cache-Control', 'private, no-cache, no-store, must-revalidate');
+        res.header('Expires', '-1');
+        res.header('Pragma', 'no-cache');
+        res.sendFile(path.join(rootDir, 'static/webreactui/dist', 'index.html'));
+    }
 });
+webuiRouter.use(express.static(path.join(rootDir, 'static/webreactui/dist')));
+// webuiRouter.use("/webui", express.static(path.join(rootDir, "static/webui")));
 
 export { webuiRouter };
