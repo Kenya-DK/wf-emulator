@@ -28,8 +28,14 @@ interface ILoggerConfig {
 export const config: IConfig = rawConfig;
 
 
-export const updateConfig = (newConfig: IConfig) => {
-    Object.assign(config, newConfig);
+const saveConfigToFile = () => {
     const fs = require("fs");
     fs.writeFileSync("config.json", JSON.stringify(config, null, 2));
+}
+
+export const updateConfig = (newConfig: IConfig, saveToFile = true) => {
+    Object.assign(config, newConfig);
+    console.log("Updated config", config);
+    if (saveToFile)
+        saveConfigToFile();
 }

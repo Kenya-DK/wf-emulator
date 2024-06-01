@@ -7,14 +7,12 @@ export type HeaderProps = {
 	isHidden?: boolean;
 }
 
-export function Header({ isHidden }: HeaderProps) {
+export function Header({ }: HeaderProps) {
 	const theme = useMantineTheme();
 	return (
 		<Group ml={"sm"} mr={"sm"} justify='space-between' className={classes.header}>
 			<Logo color={theme.colors.blue[7]} />
-			{!isHidden && (
-				<UserMenu />
-			)}
+			<UserMenu />
 		</Group>
 	);
 }

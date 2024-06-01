@@ -8,7 +8,7 @@ export class AppModule {
     return await this.client.get<InitializeResponds>('custom/initialize');
   }
 
-  public async updateConfig(config: Config): Promise<void> {
-    await this.client.put('custom/updateConfig', config);
+  public async updateConfig(config: Config): Promise<Config> {
+    return await this.client.put<Config>('custom/updateConfig', config);
   }
 }

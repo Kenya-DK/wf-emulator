@@ -12,7 +12,7 @@ customRouter.get("/initialize", initializeController);
 customRouter.get("/getItems", getItemsController);
 
 customRouter.post("/createAccount", createAccountController);
-customRouter.get("/updateConfig", updateConfigController);
+customRouter.put("/updateConfig", updateConfigController);
 customRouter.get("/getUserInfo", getUserInfoController);
 customRouter.post("/addItem", addItemController);
 

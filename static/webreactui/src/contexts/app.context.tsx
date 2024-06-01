@@ -38,10 +38,10 @@ export function AppContextProvider({ children }: AppContextProviderProps) {
   const handleUpdateConfig = (operation: EventOperation, data: Config) => {
     switch (operation) {
       case EventOperation.CREATE_OR_UPDATE:
-        setConfig((settings) => ({ ...settings, ...data }));
+        setConfig((preConfig) => ({ ...preConfig, ...data }));
         break;
       case EventOperation.SET:
-        setConfig(data);
+        setConfig({ ...data });
         break;
     }
   }
