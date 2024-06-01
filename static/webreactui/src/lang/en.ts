@@ -33,6 +33,7 @@ export const en = {
       log_in: {
         navbar: {
           home: "Home",
+          inventory: "Inventory",
         },
       },
     },
@@ -156,6 +157,19 @@ export const en = {
           footer: "You have <blue>{{count}}</blue> endo",
         }
       }
+    },
+    inventory: {
+      tabs: {
+        mods: {
+          title: "Mods",
+        },
+        items: {
+          title: "Items",
+        },
+        weapons: {
+          title: "Weapons",
+        },
+      },
     },
     auth: {
       errors: {

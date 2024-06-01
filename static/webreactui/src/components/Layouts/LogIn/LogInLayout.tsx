@@ -3,7 +3,7 @@ import { Header, NavbarMinimalColored, NavbarLinkProps } from "@components";
 import classes from "./LogInLayout.module.css";
 import { Outlet, useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faHome } from "@fortawesome/free-solid-svg-icons";
+import { faBoxes, faHome } from "@fortawesome/free-solid-svg-icons";
 import { useTranslateComponent } from "@hooks";
 export function LogInLayout() {
   // Translate general
@@ -13,6 +13,7 @@ export function LogInLayout() {
   const navigate = useNavigate();
   const links = [
     { align: 'top', link: "/webui", icon: <FontAwesomeIcon icon={faHome} />, label: useTranslateNavBar("home"), onClick: (e: NavbarLinkProps) => handleNavigate(e) },
+    { align: 'top', link: "/webui/inventory", icon: <FontAwesomeIcon icon={faBoxes} />, label: useTranslateNavBar("inventory"), onClick: (e: NavbarLinkProps) => handleNavigate(e) },
   ];
 
   const handleNavigate = (link: NavbarLinkProps) => {

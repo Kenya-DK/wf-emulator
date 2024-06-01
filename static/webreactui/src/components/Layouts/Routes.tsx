@@ -9,6 +9,9 @@ import { AuthenticatedGate } from '@components'
 // Home Routes
 import { HomePage } from '@pages'
 
+// Home Routes
+import { InventoryPage } from '@pages'
+
 // Auth Routes
 import { LoginPage } from '@pages'
 
@@ -26,6 +29,7 @@ export function AppRoutes() {
           <Route path="/webui" element={<LogInLayout />}>
             <Route element={<AuthenticatedGate goTo="/webui/auth/login" />} >
               <Route index element={<HomePage />} />
+              <Route path='/webui/inventory' element={<InventoryPage />} />
             </Route>
           </Route>
         </Route>
