@@ -27,10 +27,10 @@ const getUserInfoController: RequestHandler = async (req, res) => {
     const inventoryJSON = inventory.toJSON() as IInventoryDatabase;
     const userInformation = {
         user_name: account.DisplayName,
-        regular_credits: config.infiniteResources ? 999999999 : inventoryJSON.RegularCredits,
+        credits: config.infiniteResources ? 999999999 : inventoryJSON.RegularCredits,
         trades_remaining: config.infiniteResources ? 999999999 : inventoryJSON.TradesRemaining,
-        premium_credits_free: config.infiniteResources ? 999999999 : inventoryJSON.PremiumCreditsFree,
-        premium_credits: config.infiniteResources ? 999999999 : inventoryJSON.PremiumCredits,
+        platinum: config.infiniteResources ? 999999999 : inventoryJSON.PremiumCredits,
+        endo: inventoryJSON.FusionPoints,
     }
     res.json(userInformation);
 };

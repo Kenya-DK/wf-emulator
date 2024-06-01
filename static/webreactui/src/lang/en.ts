@@ -141,6 +141,22 @@ export const en = {
   },
   context: {},
   pages: {
+    home: {
+      cards: {
+        platinum: {
+          title: "Platinum",
+          footer: "You have <blue>{{count}}</blue> platinum",
+        },
+        credits: {
+          title: "Credits",
+          footer: "You have <blue>{{count}}</blue> credits",
+        },
+        endo: {
+          title: "Endo",
+          footer: "You have <blue>{{count}}</blue> endo",
+        }
+      }
+    },
     auth: {
       errors: {
         login: {

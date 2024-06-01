@@ -8,3 +8,4 @@ export * from './UserMenu';
 export * from './TextTranslate';
 export * from './Loading';
 export * from './TooltipIcon';
+export * from './StatsWithIcon';
