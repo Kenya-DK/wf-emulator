@@ -50,13 +50,25 @@ const inventoryController: RequestHandler = async (request: Request, response: R
         inventoryResponse.NodeIntrosCompleted.push("TeshinHardModeUnlocked");
     }
 
-    if (config.unlockAllQuests) inventoryResponse.QuestKeys = allQuestKeys;
+    if (config.unlockAllQuests) {
+        for (const questKey of allQuestKeys) {
+            if (!inventoryResponse.QuestKeys.find(quest => quest.ItemType == questKey)) {
+                inventoryResponse.QuestKeys.push({ ItemType: questKey });
+            }
+        }
+    }
+    if (config.completeAllQuests) {
+        for (const quest of inventoryResponse.QuestKeys) {
+            quest.Completed = true;
+        }
+    }
+
     if (config.unlockAllShipDecorations) inventoryResponse.ShipDecorations = allShipDecorations;
     if (config.unlockAllFlavourItems) inventoryResponse.FlavourItems = allFlavourItems satisfies IFlavourItem[];
 
     if (config.unlockAllSkins) {
         inventoryResponse.WeaponSkins = [];
-        for (let skin of allSkins) {
+        for (const skin of allSkins) {
             inventoryResponse.WeaponSkins.push({
                 ItemId: {
                     $oid: "000000000000000000000000"

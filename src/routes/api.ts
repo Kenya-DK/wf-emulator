@@ -52,6 +52,9 @@ import { getGuildLogController } from "../controllers/api/getGuildLogController"
 import { guildTechController } from "../controllers/api/guildTechController";
 import { dojoController } from "@/src/controllers/api/dojoController";
 import { getGuildDojoController } from "@/src/controllers/api/getGuildDojoController";
+import { syndicateSacrificeController } from "../controllers/api/syndicateSacrificeController";
+import { startDojoRecipeController } from "@/src/controllers/api/startDojoRecipeController";
+import { queueDojoComponentDestructionController } from "@/src/controllers/api/queueDojoComponentDestructionController";
 
 const apiRouter = express.Router();
 
@@ -84,6 +87,7 @@ apiRouter.get("/getDailyDealStockLevels.php", getDailyDealStockLevelsController)
 apiRouter.get("/getGuildLog.php", getGuildLogController);
 apiRouter.get("/dojo", dojoController);
 apiRouter.get("/getGuildDojo.php", getGuildDojoController);
+apiRouter.get("/queueDojoComponentDestruction.php", queueDojoComponentDestructionController);
 
 // post
 // eslint-disable-next-line @typescript-eslint/no-misused-promises
@@ -114,5 +118,7 @@ apiRouter.post("/createGuild.php", createGuildController);
 apiRouter.post("/sell.php", sellController);
 apiRouter.post("/upgrades.php", upgradesController);
 apiRouter.post("/guildTech.php", guildTechController);
+apiRouter.post("/syndicateSacrifice.php", syndicateSacrificeController);
+apiRouter.post("/startDojoRecipe.php", startDojoRecipeController);
 
 export { apiRouter };

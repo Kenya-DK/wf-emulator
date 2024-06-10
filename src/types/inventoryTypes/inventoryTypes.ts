@@ -231,7 +231,7 @@ export interface IInventoryResponse {
     AlignmentReplay: IAlignment;
     PersonalGoalProgress: IPersonalGoalProgress[];
     DailyAffiliationSolaris: number;
-    SpecialItems: IGenericItem2[];
+    SpecialItems: IGenericItem[];
     ThemeStyle: string;
     ThemeBackground: string;
     ThemeSounds: string;
@@ -552,6 +552,8 @@ export interface IFocusXP {
     AP_ATTACK: number;
     AP_WARD: number;
 }
+
+export type TFocusPolarity = keyof IFocusXP;
 
 export interface IFusionTreasure {
     ItemCount: number;
@@ -1022,6 +1024,11 @@ export interface IRawUpgrade {
 }
 
 export interface ISeasonChallengeHistory {
+    challenge: string;
+    id: string;
+}
+
+export interface ISeasonChallengeCompletions {
     challenge: string;
     id: string;
 }
