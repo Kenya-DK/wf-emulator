@@ -4,9 +4,7 @@ import { AuthModule } from "./auth";
 import { ComposedListener } from "@utils";
 import { EventOperation } from "./types";
 import { AppModule } from "./app";
-import { WeaponModule } from "./weapon";
-import { ModsModule } from "./mods";
-import { ItemModule } from "./item";
+import { InventoryModule } from "./inventory";
 
 export class RestClient {
   private client: AxiosInstance;
@@ -17,9 +15,7 @@ export class RestClient {
     this.client = axios.create({ baseURL: baseUrl });
     this.app = new AppModule(this);
     this.auth = new AuthModule(this);
-    this.item = new ItemModule(this);
-    this.mods = new ModsModule(this);
-    this.weapons = new WeaponModule(this);
+    this.inventory = new InventoryModule(this);
 
   }
 
@@ -91,9 +87,7 @@ export class RestClient {
   // Modules
   app: AppModule;
   auth: AuthModule;
-  item: ItemModule;
-  mods: ModsModule;
-  weapons: WeaponModule;
+  inventory: InventoryModule;
 }
 const OnEvent = <T>(event: string, callback: (data: T) => void) => api.listener.add(event, callback)
 const OnDataEvent = <T>(event: string, callback: (data: { operation: EventOperation, data: T }) => void) => api.listener.add(event, callback)

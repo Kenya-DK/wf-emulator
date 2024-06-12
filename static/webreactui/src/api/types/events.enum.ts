@@ -3,8 +3,10 @@ export enum Events {
   UpdateAppInfo = "App:UpdateAppInfo",
   UpdateConfig = "App:UpdateConfig",
 
-  // User
-  UpdateUser = "User:Update",
+  // User Name
+  SetUserName = "App:SetUserName",
+  // Inventory
+  UpdateInventory = "Inventory:Update",
 }
 
 export enum EventOperation {

@@ -1,5 +1,5 @@
 import { Group, Menu } from '@mantine/core';
-import { useAppContext, useAuthContext } from '@contexts';
+import { useAppContext } from '@contexts';
 import { useTranslateComponent } from '@hooks';
 import { faGear, faRightFromBracket } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -10,8 +10,7 @@ import { useMutation } from '@tanstack/react-query';
 import { ConfigForm } from '@components';
 export function UserMenu() {
 	// States
-	const { user } = useAuthContext();
-	const { config } = useAppContext();
+	const { config, userName } = useAppContext();
 	// Translate general
 	const useTranslateUserMenu = (key: string, context?: { [key: string]: any }, i18Key?: boolean) => useTranslateComponent(`user_menu.${key}`, { ...context }, i18Key)
 	const useTranslateErrors = (key: string, context?: { [key: string]: any }, i18Key?: boolean) => useTranslateUserMenu(`errors.${key}`, { ...context }, i18Key)
@@ -41,7 +40,7 @@ export function UserMenu() {
 		>
 			<Menu.Target>
 				<Group>
-					{user?.user_name || "User"}
+					{userName || "User"}
 				</Group>
 			</Menu.Target>
 
@@ -58,7 +57,7 @@ export function UserMenu() {
 						}} />,
 					})
 				}}>{useTranslateUserMenu("items.config")}</Menu.Item>
-				{user && <Menu.Item leftSection={<FontAwesomeIcon icon={faRightFromBracket} />} onClick={async () => { await LogOut() }}>{useTranslateUserMenu("items.logout")}</Menu.Item>}
+				{userName && <Menu.Item leftSection={<FontAwesomeIcon icon={faRightFromBracket} />} onClick={async () => { await LogOut() }}>{useTranslateUserMenu("items.logout")}</Menu.Item>}
 			</Menu.Dropdown>
 		</Menu>
 	);

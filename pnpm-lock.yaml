@@ -21,8 +21,14 @@ dependencies:
     specifier: ^8.1.1
     version: 8.4.0
   warframe-items:
-    specifier: ^1.1261.19
+    specifier: ^1.1262.74
     version: 1.1262.74(warframe-worldstate-data@2.5.20)
+  warframe-public-export-plus:
+    specifier: ^0.2.2
+    version: 0.2.3
+  warframe-riven-info:
+    specifier: ^0.1.0
+    version: 0.1.1
   winston:
     specifier: ^3.11.0
     version: 3.13.0
@@ -2345,6 +2351,14 @@ packages:
       warframe-worldstate-data: ^2
     dependencies:
       warframe-worldstate-data: 2.5.20
+    dev: false
+
+  /warframe-public-export-plus@0.2.3:
+    resolution: {integrity: sha512-Bl4gb3f1LIdGXLEOJg2XTIFYqrialdTIvVhDqDzVJIRfii0PKsy9jsr9vqM14tWz7oVpQMeCUyvisDkkXijTSg==}
+    dev: false
+
+  /warframe-riven-info@0.1.1:
+    resolution: {integrity: sha512-Flh4aObS+b+YroemTyrFflM0N6AmjqPhVXi52M7JDr9BLSVPUQJMaccQpEdgrdbVfgkPzrdHvVgAjXEhA7CslQ==}
     dev: false
 
   /warframe-worldstate-data@2.5.20:

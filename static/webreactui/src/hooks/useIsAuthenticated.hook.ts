@@ -1,6 +1,6 @@
-import { useGetUser } from ".";
+import { useGetInventory } from ".";
 
 export const useIsAuthenticated = () => {
-  const user = useGetUser();
-  return user ? true : false;
+  const inv = useGetInventory();
+  return inv ? true : false;
 }

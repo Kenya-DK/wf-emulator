@@ -1,4 +1,4 @@
-import { RestClient, User } from "..";
+import { RestClient } from "..";
 import { LogInResponse } from "@api";
 export class AuthModule {
   constructor(private readonly client: RestClient) { }
@@ -17,9 +17,6 @@ export class AuthModule {
     this.client.setAccountId(res.id);
     this.client.setNonce(res.Nonce);
     return res;
-  }
-  async getUserInfo(): Promise<User> {
-    return await this.client.get<User>('custom/getUserInfo');
   }
 }
 declare var wp: any;

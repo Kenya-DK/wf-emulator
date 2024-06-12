@@ -1,12 +1,13 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { AuthContextProvider } from "./auth.context";
-import { AppInfo, Config, EventOperation, Events, OnDataEvent } from "@api";
+import { InventoryContextProvider } from "./inventory.context";
+import { AppInfo, EventOperation, Events, OnDataEvent, OnEvent } from "@api";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@api";
+import { api, Config } from "@api";
 
 export type AppContextProps = {
   app_info: AppInfo | undefined;
   config: Config | undefined;
+  userName?: string;
 }
 
 export type AppContextProviderProps = {
@@ -15,7 +16,8 @@ export type AppContextProviderProps = {
 
 export const AppContext = createContext<AppContextProps>({
   app_info: undefined,
-  config: undefined
+  config: undefined,
+  userName: undefined
 });
 
 export const useAppContext = () => useContext(AppContext);
@@ -24,6 +26,7 @@ export const useAppContext = () => useContext(AppContext);
 export function AppContextProvider({ children }: AppContextProviderProps) {
   const [appInfo, setAppInfo] = useState<AppInfo | undefined>(useContext(AppContext).app_info);
   const [config, setConfig] = useState<Config | undefined>(useContext(AppContext).config);
+  const [userName, setUserName] = useState<string | undefined>(useContext(AppContext).userName);
   // Handle update, create, delete transaction
   const handleUpdateAppInfo = (operation: EventOperation, data: AppInfo) => {
     switch (operation) {
@@ -48,6 +51,8 @@ export function AppContextProvider({ children }: AppContextProviderProps) {
 
 
 
+
+
   // Fetch data from rust side
   const { data } = useQuery({
     queryKey: ['app_init'],
@@ -65,13 +70,14 @@ export function AppContextProvider({ children }: AppContextProviderProps) {
   useEffect(() => {
     OnDataEvent<AppInfo>(Events.UpdateAppInfo, ({ data, operation }) => handleUpdateAppInfo(operation, data));
     OnDataEvent<Config>(Events.UpdateConfig, ({ data, operation }) => handleUpdateConfig(operation, data));
+    OnEvent<string>(Events.SetUserName, (userName) => setUserName(userName));
     return () => { }
   }, []);
   return (
-    <AppContext.Provider value={{ app_info: appInfo, config }}>
-      <AuthContextProvider>
+    <AppContext.Provider value={{ app_info: appInfo, config, userName }}>
+      <InventoryContextProvider>
         {children}
-      </AuthContextProvider>
+      </InventoryContextProvider>
     </AppContext.Provider>
   )
 }

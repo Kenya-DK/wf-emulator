@@ -51,4 +51,4 @@ const getItemListsController: RequestHandler = (_req, res) => {
     });
 };
 
-export { getItemsController };
+export { getItemListsController };
