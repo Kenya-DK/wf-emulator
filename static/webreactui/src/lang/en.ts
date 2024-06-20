@@ -29,6 +29,15 @@ export const en = {
         }
       },
     },
+    searchfield: {
+      label: "Search",
+      placeholder: "Search...",
+      buttons: {
+        search: {
+          tooltip: "Search",
+        },
+      }
+    },
     layout: {
       log_in: {
         navbar: {

@@ -3,25 +3,12 @@ import { useTranslatePages } from "@hooks";
 import { ModsPanel } from "./Tabs/Mods";
 import { ItemsPanel } from "./Tabs/Items";
 import { WeaponsPanel } from "./Tabs/Weapons";
-import { useQuery } from "@tanstack/react-query";
-import { api } from "../../api";
-import { useEffect } from "react";
-
 
 export function InventoryPage() {
   // Translate general
   const useTranslateForm = (key: string, context?: { [key: string]: any }, i18Key?: boolean) => useTranslatePages(`inventory.${key}`, { ...context }, i18Key)
   const useTranslateTabs = (key: string, context?: { [key: string]: any }, i18Key?: boolean) => useTranslateForm(`tabs.${key}`, { ...context }, i18Key)
 
-  // Fetch data from rust side
-  const { data } = useQuery({
-    queryKey: ['inventory'],
-    queryFn: () => api.inventory.getInventory(),
-  })
-
-  useEffect(() => {
-    console.log(data)
-  }, [data])
   const tabs = [
     {
       label: useTranslateTabs("mods.title"), component: <ModsPanel />, id: "mods",

@@ -17,7 +17,7 @@ export function HomePage() {
       <Grid>
         <Grid.Col span={4}>
           <StatsWithIcon
-            count={inv?.PremiumCredits || 0}
+            count={inv?.platinum || 0}
             color={getGradient({ deg: 180, from: 'green.7', to: 'green.9' }, theme)}
             title={useTranslateCards("platinum.title")}
             icon={<FontAwesomeIcon size="2x" icon={faMoneyBill} />}
@@ -25,7 +25,7 @@ export function HomePage() {
               <TextTranslate
                 i18nKey={useTranslateCards("platinum.footer")}
                 values={{
-                  count: inv?.PremiumCredits || 0,
+                  count: inv?.platinum || 0,
                 }}
               />
             }
@@ -33,7 +33,7 @@ export function HomePage() {
         </Grid.Col>
         <Grid.Col span={4}>
           <StatsWithIcon
-            count={inv?.RegularCredits || 0}
+            count={inv?.credits || 0}
             color={getGradient({ deg: 180, from: 'blue.7', to: 'blue.9' }, theme)}
             title={useTranslateCards("credits.title")}
             icon={<FontAwesomeIcon size="2x" icon={faMoneyBill} />}
@@ -41,7 +41,7 @@ export function HomePage() {
               <TextTranslate
                 i18nKey={useTranslateCards("credits.footer")}
                 values={{
-                  count: inv?.RegularCredits || 0,
+                  count: inv?.credits || 0,
                 }}
               />
             }
@@ -49,7 +49,7 @@ export function HomePage() {
         </Grid.Col>
         <Grid.Col span={4}>
           <StatsWithIcon
-            count={inv?.FusionPoints || 0}
+            count={inv?.endo || 0}
             color={getGradient({ deg: 180, from: 'yellow.7', to: 'yellow.9' }, theme)}
             title={useTranslateCards("endo.title")}
             icon={<FontAwesomeIcon size="2x" icon={faMoneyBill} />}
@@ -57,7 +57,7 @@ export function HomePage() {
               <TextTranslate
                 i18nKey={useTranslateCards("endo.footer")}
                 values={{
-                  count: inv?.FusionPoints || 0,
+                  count: inv?.endo || 0,
                 }}
               />
             }

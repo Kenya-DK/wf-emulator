@@ -19,8 +19,29 @@ function reduceItems(items: MinItem[]): ListedItem[] {
     });
 }
 
-const getItemListsController: RequestHandler = (_req, res) => {
+const getCacheController: RequestHandler = (_req, res) => {
     const mods = reduceItems(items.filter(item => item.category == "Mods"));
+    const getRivenMods = items.filter(mod => mod.uniqueName.includes("/Lotus/Upgrades/Mods/Randomized") && mod.category == "Mods") as any[];
+    const rivenUpgrades: { [id: string]: any[] } = {};
+    for (const mod of getRivenMods) {
+        if (!mod.upgradeEntries)
+            continue;
+        for (const upgrade of mod.upgradeEntries) {
+            if (!rivenUpgrades[mod.uniqueName])
+                rivenUpgrades[mod.uniqueName] = [];
+
+            const value = upgrade.upgradeValues?.[0];
+            if (!value)
+                continue;
+            delete upgrade.upgradeValues;
+            rivenUpgrades[mod.uniqueName].push({
+                ...upgrade,
+                value: value.value,
+                locTag: value.locTag,
+            });
+        }
+    }
+
     for (const [uniqueName, arcane] of Object.entries(ExportArcanes)) {
         mods.push({
             uniqueName: uniqueName,
@@ -28,6 +49,7 @@ const getItemListsController: RequestHandler = (_req, res) => {
         });
     }
     res.json({
+        riven_tags: rivenUpgrades,
         warframes: reduceItems(warframes),
         weapons: Object.entries(ExportWeapons)
             .filter(([_uniqueName, weapon]) => weapon.productCategory !== "OperatorAmps" && weapon.totalDamage !== 0)
@@ -51,4 +73,4 @@ const getItemListsController: RequestHandler = (_req, res) => {
     });
 };
 
-export { getItemListsController };
+export { getCacheController };

@@ -5,6 +5,7 @@ import { ComposedListener } from "@utils";
 import { EventOperation } from "./types";
 import { AppModule } from "./app";
 import { InventoryModule } from "./inventory";
+import { CacheModule } from "./cache";
 
 export class RestClient {
   private client: AxiosInstance;
@@ -16,7 +17,7 @@ export class RestClient {
     this.app = new AppModule(this);
     this.auth = new AuthModule(this);
     this.inventory = new InventoryModule(this);
-
+    this.cache = new CacheModule(this);
   }
 
 
@@ -88,6 +89,7 @@ export class RestClient {
   app: AppModule;
   auth: AuthModule;
   inventory: InventoryModule;
+  cache: CacheModule;
 }
 const OnEvent = <T>(event: string, callback: (data: T) => void) => api.listener.add(event, callback)
 const OnDataEvent = <T>(event: string, callback: (data: { operation: EventOperation, data: T }) => void) => api.listener.add(event, callback)

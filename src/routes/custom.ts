@@ -1,9 +1,6 @@
 import express from "express";
 import { initializeController } from "@/src/controllers/custom/initializeController";
-import { getItemListsController } from "@/src/controllers/custom/getItemsController";
-import { getUserModsController } from "@/src/controllers/custom/getUserModsController";
-import { getUserItemsController } from "@/src/controllers/custom/getUserItemsController";
-import { getUserWeaponsController } from "@/src/controllers/custom/getUserWeaponsController";
+import { getCacheController } from "@/src/controllers/custom/getCacheController";
 import { createAccountController } from "@/src/controllers/custom/createAccountController";
 import { updateConfigController } from "@/src/controllers/custom/updateConfigController";
 import { addItemController } from "@/src/controllers/custom/addItemController";
@@ -11,11 +8,7 @@ import { addItemController } from "@/src/controllers/custom/addItemController";
 const customRouter = express.Router();
 
 customRouter.get("/initialize", initializeController);
-customRouter.get("/getItems", getItemListsController);
-
-customRouter.get("/getUserMods", getUserModsController);
-customRouter.get("/getUserItems", getUserItemsController);
-customRouter.get("/getUserWeapons", getUserWeaponsController);
+customRouter.get("/cache", getCacheController);
 
 customRouter.post("/createAccount", createAccountController);
 customRouter.put("/updateConfig", updateConfigController);
