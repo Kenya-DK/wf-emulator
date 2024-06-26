@@ -1,3 +1,5 @@
+import { faCubes } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { Text, MantineSize, MantineStyleProp, TextProps } from '@mantine/core';
 import { Trans } from 'react-i18next';
 
@@ -35,6 +37,7 @@ export function TextTranslate({ textProps, style, size, color, i18nKey, values, 
 						lime: <Text component="span" size={size ? size : "sm"} c="lime.3" />,
 						teal: <Text component="span" size={size ? size : "sm"} c="teal.3" />,
 						dark: <Text component="span" size={size ? size : "sm"} c="dark.3" />,
+						qty: <FontAwesomeIcon icon={faCubes} />,
 					}
 				}
 			/>

@@ -148,6 +148,12 @@ export const en = {
         },
       }
     },
+    mod_item: {
+      fields: {
+        quantity: "<qty/> <blue>{{quantity}}</blue>",
+        mod_rank: "Rank: <blue>{{mod_rank}}</blue>/<blue>{{mod_max_rank}}</blue>",
+      },
+    },
   },
   context: {},
   pages: {

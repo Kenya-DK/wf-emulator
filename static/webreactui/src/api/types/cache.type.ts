@@ -1,8 +1,5 @@
 export interface CacheResponse {
-  warframes: CacheItem[];
-  weapons: CacheItem[];
-  miscitems: CacheItem[];
-  mods: CacheMod[];
+  items: CacheItem[];
   badItems: { [key: string]: string };
 }
 
@@ -16,8 +13,5 @@ export enum BadItem {
 export interface CacheItem {
   uniqueName: string;
   name: string;
-}
-
-export interface CacheMod extends CacheItem {
   fusionLimit?: number;
 }

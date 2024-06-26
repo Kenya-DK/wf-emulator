@@ -10,7 +10,7 @@ export interface ItemBase {
   _id: string;
   name: string;
   uniqueId: string;
-  quality: number;
+  quantity: number;
 }
 export interface ItemMod extends ItemBase {
   rank: number;

@@ -1,6 +1,5 @@
 
-import { IInventory, ItemMod, OpenWF, RestClient, EventOperation, Events, SendDataEvent } from "@api";
-import { getItemNameByUniqueId } from "@utils";
+import { IInventory, ItemMod, OpenWF, RestClient, EventOperation, Events, SendDataEvent, api } from "@api";
 export class InventoryModule {
   constructor(private readonly client: RestClient) { }
 
@@ -30,24 +29,26 @@ export class InventoryModule {
     try {
       // Parse each raw upgrade
       for (const rawUpgrade of inventory.RawUpgrades) {
+        const item = api.cache.getCachedItemByUniqueId(rawUpgrade.ItemType)
         mods.push({
           _id: rawUpgrade.LastAdded.$oid,
-          name: getItemNameByUniqueId(rawUpgrade.ItemType) || rawUpgrade.ItemType,
+          name: item?.name || rawUpgrade.ItemType,
           uniqueId: rawUpgrade.ItemType,
-          quality: rawUpgrade.ItemCount,
+          quantity: rawUpgrade.ItemCount || 1,
           rank: 0
         });
       }
       // Parse each upgrade
       for (const upgrade of inventory.Upgrades) {
         const fingerprint = JSON.parse(upgrade.UpgradeFingerprint);
-
+        const item = api.cache.getCachedItemByUniqueId(upgrade.ItemType)
         mods.push({
           _id: upgrade.ItemId.$oid,
-          name: getItemNameByUniqueId(upgrade.ItemType) || upgrade.ItemType,
+          name: item?.name || upgrade.ItemType,
           uniqueId: upgrade.ItemType,
-          quality: upgrade.ItemCount,
-          rank: fingerprint.lvl
+          quantity: upgrade.ItemCount || 1,
+          rank: fingerprint.lvl,
+          // maxRank: item?.fusionLimit || 0
         });
       }
     } catch (error) {

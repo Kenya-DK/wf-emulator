@@ -6,7 +6,7 @@ import { ExportArcanes, ExportWeapons } from "warframe-public-export-plus";
 interface ListedItem {
     uniqueName: string;
     name: string;
-    fusionLimit?: number;
+    maxRank?: number;
 }
 
 function reduceItems(items: MinItem[]): ListedItem[] {
@@ -14,7 +14,7 @@ function reduceItems(items: MinItem[]): ListedItem[] {
         return {
             uniqueName: item.uniqueName,
             name: item.name,
-            fusionLimit: (item as any).fusionLimit
+            maxRank: (item as any).fusionLimit
         };
     });
 }
@@ -42,33 +42,48 @@ const getCacheController: RequestHandler = (_req, res) => {
         }
     }
 
+
+    // Available items
+    let availableItems: any = [];
+
+    // Get all available arcanes
     for (const [uniqueName, arcane] of Object.entries(ExportArcanes)) {
-        mods.push({
+        availableItems.push({
             uniqueName: uniqueName,
             name: getEnglishString(arcane.name)
         });
     }
+
+    // Get all available mods
+    availableItems = availableItems.concat(mods);
+
+    // Get all available warframes
+    availableItems = availableItems.concat(reduceItems(warframes));
+
+    // Get all available weapons
+    availableItems = availableItems.concat(Object.entries(ExportWeapons)
+        .filter(([_uniqueName, weapon]) => weapon.productCategory !== "OperatorAmps" && weapon.totalDamage !== 0)
+        .map(([uniqueName, weapon]) => {
+            return {
+                uniqueName,
+                name: getEnglishString(weapon.name)
+            };
+        }));
+
+    // Get all available misc items
+    availableItems = availableItems.concat(reduceItems(
+        items.filter(
+            item =>
+                item.category == "Misc" ||
+                item.category == "Resources" ||
+                item.category == "Fish" ||
+                ((item as any).productCategory == "Pistols" && (item as MinWeapon).totalDamage == 0)
+        )
+    ));
+
     res.json({
         riven_tags: rivenUpgrades,
-        warframes: reduceItems(warframes),
-        weapons: Object.entries(ExportWeapons)
-            .filter(([_uniqueName, weapon]) => weapon.productCategory !== "OperatorAmps" && weapon.totalDamage !== 0)
-            .map(([uniqueName, weapon]) => {
-                return {
-                    uniqueName,
-                    name: getEnglishString(weapon.name)
-                };
-            }),
-        miscitems: reduceItems(
-            items.filter(
-                item =>
-                    item.category == "Misc" ||
-                    item.category == "Resources" ||
-                    item.category == "Fish" ||
-                    ((item as any).productCategory == "Pistols" && (item as MinWeapon).totalDamage == 0)
-            )
-        ),
-        mods,
+        items: availableItems,
         badItems
     });
 };

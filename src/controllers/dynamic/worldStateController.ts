@@ -6,7 +6,8 @@ const worldStateController: RequestHandler = (_req, res) => {
     res.json({
         ...worldState,
         BuildLabel: buildConfig.buildLabel,
-        Time: Math.round(Date.now() / 1000)
+        // Add 1 hour to the current time to simulate the time passing
+        Time: Math.round(Date.now() / 1000) + 3600,
     });
 };
 
