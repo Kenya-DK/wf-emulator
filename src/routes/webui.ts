@@ -18,6 +18,17 @@ webuiRouter.use("/webui", (req, res, next) => {
     next();
 });
 
+// Serve virtual routes
+webuiRouter.get("/webui/settings", (_req, res) => {
+    res.sendFile(path.join(rootDir, "static/webui/index.html"));
+});
+webuiRouter.get("/webui/inventory", (_req, res) => {
+    res.sendFile(path.join(rootDir, "static/webui/index.html"));
+});
+webuiRouter.get("/webui/mods", (_req, res) => {
+    res.sendFile(path.join(rootDir, "static/webui/index.html"));
+});
+
 // Serve static files
 webuiRouter.use((req, res, next) => {
     // If the request starts with /api, we don't want to serve index.html
