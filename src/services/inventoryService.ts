@@ -2,7 +2,7 @@ import { Inventory } from "@/src/models/inventoryModels/inventoryModel";
 import new_inventory from "@/static/fixed_responses/postTutorialInventory.json";
 import { config } from "@/src/services/configService";
 import { Types } from "mongoose";
-import { SlotNames } from "@/src/types/purchaseTypes";
+import { SlotNames, IInventoryChanges } from "@/src/types/purchaseTypes";
 import {
     IChallengeProgress,
     IConsumable,
@@ -13,7 +13,8 @@ import {
     IRawUpgrade,
     ISeasonChallenge,
     ITypeCount,
-    InventorySlot
+    InventorySlot,
+    IWeaponSkinClient
 } from "@/src/types/inventoryTypes/inventoryTypes";
 import { IGenericUpdate } from "../types/genericUpdate";
 import {
@@ -26,7 +27,7 @@ import { logger } from "@/src/utils/logger";
 import { WeaponTypeInternal, getWeaponType, getExalted } from "@/src/services/itemDataService";
 import { ISyndicateSacrifice, ISyndicateSacrificeResponse } from "../types/syndicateTypes";
 import { IEquipmentClient } from "../types/inventoryTypes/commonInventoryTypes";
-import { ExportRecipes } from "warframe-public-export-plus";
+import { ExportCustoms, ExportFlavour, ExportRecipes, ExportResources } from "warframe-public-export-plus";
 
 export const createInventory = async (
     accountOwnerId: Types.ObjectId,
@@ -70,7 +71,7 @@ export const addItem = async (
     accountId: string,
     typeName: string,
     quantity: number = 1
-): Promise<{ InventoryChanges: object }> => {
+): Promise<{ InventoryChanges: IInventoryChanges }> => {
     // Strict typing
     if (typeName in ExportRecipes) {
         const inventory = await getInventory(accountId);
@@ -85,6 +86,36 @@ export const addItem = async (
         return {
             InventoryChanges: {
                 Recipes: recipeChanges
+            }
+        };
+    }
+    if (typeName in ExportResources) {
+        const inventory = await getInventory(accountId);
+        const miscItemChanges = [
+            {
+                ItemType: typeName,
+                ItemCount: quantity
+            } satisfies IMiscItem
+        ];
+        addMiscItems(inventory, miscItemChanges);
+        await inventory.save();
+        return {
+            InventoryChanges: {
+                MiscItems: miscItemChanges
+            }
+        };
+    }
+    if (typeName in ExportCustoms) {
+        return {
+            InventoryChanges: {
+                WeaponSkins: [await addSkin(typeName, accountId)]
+            }
+        };
+    }
+    if (typeName in ExportFlavour) {
+        return {
+            InventoryChanges: {
+                FlavourItems: [await addCustomization(typeName, accountId)]
             }
         };
     }
@@ -147,12 +178,6 @@ export const addItem = async (
                     [weaponType]: [weapon]
                 }
             };
-        case "Interface":
-            return {
-                InventoryChanges: {
-                    FlavourItems: [await addCustomization(typeName, accountId)]
-                }
-            };
         case "Objects": {
             // /Lotus/Objects/Tenno/Props/TnoLisetTextProjector (Note Beacon)
             const inventory = await getInventory(accountId);
@@ -172,13 +197,6 @@ export const addItem = async (
         }
         case "Types":
             switch (typeName.substr(1).split("/")[2]) {
-                case "AvatarImages":
-                case "SuitCustomizations":
-                    return {
-                        InventoryChanges: {
-                            FlavourItems: [await addCustomization(typeName, accountId)]
-                        }
-                    };
                 case "Sentinels":
                     // TOOD: Sentinels should also grant their DefaultUpgrades & SentinelWeapon.
                     const sentinel = await addSentinel(typeName, accountId);
@@ -409,7 +427,7 @@ export const syndicateSacrifice = async (
 };
 
 export const addWeapon = async (
-    weaponType: WeaponTypeInternal,
+    weaponType: WeaponTypeInternal | "Hoverboards",
     weaponName: string,
     accountId: string,
     modularParts: string[] | undefined = undefined
@@ -429,10 +447,16 @@ export const addWeapon = async (
 
 export const addCustomization = async (customizatonName: string, accountId: string): Promise<IFlavourItem> => {
     const inventory = await getInventory(accountId);
-
     const flavourItemIndex = inventory.FlavourItems.push({ ItemType: customizatonName }) - 1;
     const changedInventory = await inventory.save();
     return changedInventory.FlavourItems[flavourItemIndex].toJSON();
+};
+
+export const addSkin = async (typeName: string, accountId: string): Promise<IWeaponSkinClient> => {
+    const inventory = await getInventory(accountId);
+    const index = inventory.WeaponSkins.push({ ItemType: typeName }) - 1;
+    const changedInventory = await inventory.save();
+    return changedInventory.WeaponSkins[index].toJSON();
 };
 
 const addGearExpByCategory = (

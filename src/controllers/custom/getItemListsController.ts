@@ -1,22 +1,18 @@
 import { RequestHandler } from "express";
-import { MinItem, items, getEnglishString } from "@/src/services/itemDataService";
-import badItems from "@/static/json/exclude-mods.json";
-import { ExportArcanes, ExportResources, ExportWarframes, ExportWeapons } from "warframe-public-export-plus";
+import { getEnglishString } from "@/src/services/itemDataService";
+import {
+    ExportArcanes,
+    ExportGear,
+    ExportResources,
+    ExportUpgrades,
+    ExportWarframes,
+    ExportWeapons
+} from "warframe-public-export-plus";
 
 interface ListedItem {
     uniqueName: string;
     name: string;
     fusionLimit?: number;
-}
-
-function reduceItems(items: MinItem[]): ListedItem[] {
-    return items.map((item: MinItem): ListedItem => {
-        return {
-            uniqueName: item.uniqueName,
-            name: item.name,
-            fusionLimit: (item as any).fusionLimit
-        };
-    });
 }
 
 const getItemListsController: RequestHandler = (_req, res) => {
@@ -31,7 +27,7 @@ const getItemListsController: RequestHandler = (_req, res) => {
                 });
             } else if (!item.excludeFromCodex) {
                 miscitems.push({
-                    uniqueName,
+                    uniqueName: "MiscItems:" + uniqueName,
                     name: getEnglishString(item.name)
                 });
             }
@@ -39,15 +35,32 @@ const getItemListsController: RequestHandler = (_req, res) => {
     }
     for (const [uniqueName, item] of Object.entries(ExportResources)) {
         miscitems.push({
-            uniqueName,
+            uniqueName: "MiscItems:" + uniqueName,
+            name: getEnglishString(item.name)
+        });
+    }
+    for (const [uniqueName, item] of Object.entries(ExportGear)) {
+        miscitems.push({
+            uniqueName: "Consumables:" + uniqueName,
             name: getEnglishString(item.name)
         });
     }
 
-    const mods = reduceItems(items.filter(item => item.category == "Mods"));
+    const mods: ListedItem[] = [];
+    const badItems: Record<string, boolean> = {};
+    for (const [uniqueName, upgrade] of Object.entries(ExportUpgrades)) {
+        mods.push({
+            uniqueName,
+            name: getEnglishString(upgrade.name),
+            fusionLimit: upgrade.fusionLimit
+        });
+        if (upgrade.isStarter || upgrade.isFrivolous || upgrade.upgradeEntries) {
+            badItems[uniqueName] = true;
+        }
+    }
     for (const [uniqueName, arcane] of Object.entries(ExportArcanes)) {
         mods.push({
-            uniqueName: uniqueName,
+            uniqueName,
             name: getEnglishString(arcane.name)
         });
     }

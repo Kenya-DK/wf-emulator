@@ -1,14 +1,14 @@
-import { IMissionRewardResponse, IReward, IInventoryFieldType, inventoryFields } from "@/src/types/missionTypes";
+import { IMissionRewardResponse, IInventoryFieldType, inventoryFields } from "@/src/types/missionTypes";
 
-import missionsDropTable from "@/static/json/missions-drop-table.json";
 import {
-    modNames,
-    relicNames,
-    miscNames,
-    resourceNames,
-    gearNames,
-    blueprintNames
-} from "@/src/services/itemDataService";
+    ExportRegions,
+    ExportRewards,
+    ExportUpgrades,
+    ExportGear,
+    ExportRecipes,
+    ExportRelics,
+    IReward
+} from "warframe-public-export-plus";
 import { IMissionInventoryUpdateRequest } from "../types/requestTypes";
 import { logger } from "@/src/utils/logger";
 
@@ -23,49 +23,46 @@ const getRewards = ({
         return { InventoryChanges: {}, MissionRewards: [] };
     }
 
-    const rewards = (missionsDropTable as { [key: string]: IReward[] })[RewardInfo.node];
-    if (!rewards) {
-        return { InventoryChanges: {}, MissionRewards: [] };
-    }
-
-    const rotationCount = RewardInfo.rewardQualifications?.length || 0;
-    const rotations = getRotations(rotationCount);
     const drops: IReward[] = [];
-    for (const rotation of rotations) {
-        const rotationRewards = rewards.filter(reward => reward.rotation === rotation);
+    if (RewardInfo.node in ExportRegions) {
+        const region = ExportRegions[RewardInfo.node];
+        const rewardManifests = region.rewardManifests ?? [];
+        if (rewardManifests.length == 0) {
+            return { InventoryChanges: {}, MissionRewards: [] };
+        }
 
-        // Separate guaranteed and chance drops
-        const guaranteedDrops: IReward[] = [];
-        const chanceDrops: IReward[] = [];
-        for (const reward of rotationRewards) {
-            if (reward.chance === 100) {
-                guaranteedDrops.push(reward);
-            } else {
-                chanceDrops.push(reward);
+        let rotations: number[] = [];
+        if (RewardInfo.VaultsCracked) {
+            // For Spy missions, e.g. 3 vaults cracked = A, B, C
+            for (let i = 0; i != RewardInfo.VaultsCracked; ++i) {
+                rotations.push(i);
+            }
+        } else {
+            const rotationCount = RewardInfo.rewardQualifications?.length || 0;
+            rotations = getRotations(rotationCount);
+        }
+        rewardManifests
+            .map(name => ExportRewards[name])
+            .forEach(table => {
+                for (const rotation of rotations) {
+                    const rotationRewards = table[rotation];
+                    const drop = getRandomRewardByChance(rotationRewards);
+                    if (drop) {
+                        drops.push(drop);
+                    }
+                }
+            });
+
+        if (region.cacheRewardManifest && RewardInfo.EnemyCachesFound) {
+            const deck = ExportRewards[region.cacheRewardManifest];
+            for (let rotation = 0; rotation != RewardInfo.EnemyCachesFound; ++rotation) {
+                const drop = getRandomRewardByChance(deck[rotation]);
+                if (drop) {
+                    drops.push(drop);
+                }
             }
         }
-
-        const randomDrop = getRandomRewardByChance(chanceDrops);
-        if (randomDrop) {
-            guaranteedDrops.push(randomDrop);
-        }
-
-        drops.push(...guaranteedDrops);
     }
-
-    // const testDrops = [
-    //     { chance: 7.69, name: "Lith W3 Relic", rotation: "B" },
-    //     { chance: 7.69, name: "Lith W3 Relic", rotation: "B" },
-    //     { chance: 10.82, name: "2X Orokin Cell", rotation: "C" },
-    //     { chance: 10.82, name: "Arrow Mutation", rotation: "C" },
-    //     { chance: 10.82, name: "200 Endo", rotation: "C" },
-    //     { chance: 10.82, name: "200 Endo", rotation: "C" },
-    //     { chance: 10.82, name: "2,000,000 Credits Cache", rotation: "C" },
-    //     { chance: 7.69, name: "Health Restore (Large)", rotation: "C" },
-    //     { chance: 7.69, name: "Vapor Specter Blueprint", rotation: "C" }
-    // ];
-    // logger.debug("Mission rewards:", testDrops);
-    // return formatRewardsToInventoryType(testDrops);
 
     logger.debug("Mission rewards:", drops);
     return formatRewardsToInventoryType(drops);
@@ -78,12 +75,22 @@ const combineRewardAndLootInventory = (
     const missionCredits = lootInventory.RegularCredits || 0;
     const creditsBonus = rewardInventory.RegularCredits || 0;
     const totalCredits = missionCredits + creditsBonus;
-    const FusionPoints = (lootInventory.FusionPoints || 0) + (rewardInventory.FusionPoints || 0) || undefined;
+    let FusionPoints = rewardInventory.FusionPoints || 0;
+
+    // Discharge Endo picked up during the mission
+    if (lootInventory.FusionBundles) {
+        for (const fusionBundle of lootInventory.FusionBundles) {
+            if (fusionBundle.ItemType in fusionBundles) {
+                FusionPoints += fusionBundles[fusionBundle.ItemType] * fusionBundle.ItemCount;
+            } else {
+                logger.error(`unknown fusion bundle: ${fusionBundle.ItemType}`);
+            }
+        }
+        lootInventory.FusionBundles = undefined;
+    }
 
     lootInventory.RegularCredits = totalCredits;
-    if (FusionPoints) {
-        lootInventory.FusionPoints = FusionPoints;
-    }
+    lootInventory.FusionPoints = FusionPoints;
     inventoryFields.forEach((field: IInventoryFieldType) => {
         if (rewardInventory[field] && !lootInventory[field]) {
             lootInventory[field] = [];
@@ -96,14 +103,14 @@ const combineRewardAndLootInventory = (
         TotalCredits: [totalCredits, totalCredits],
         CreditsBonus: [creditsBonus, creditsBonus],
         MissionCredits: [missionCredits, missionCredits],
-        ...(FusionPoints !== undefined && { FusionPoints })
+        FusionPoints: FusionPoints
     };
 };
 
-const getRotations = (rotationCount: number): (string | undefined)[] => {
-    if (rotationCount === 0) return [undefined];
+const getRotations = (rotationCount: number): number[] => {
+    if (rotationCount === 0) return [0];
 
-    const rotationPattern = ["A", "A", "B", "C"];
+    const rotationPattern = [0, 0, 1, 2]; // A, A, B, C
     const rotatedValues = [];
 
     for (let i = 0; i < rotationCount; i++) {
@@ -113,15 +120,15 @@ const getRotations = (rotationCount: number): (string | undefined)[] => {
     return rotatedValues;
 };
 
-const getRandomRewardByChance = (data: IReward[] | undefined): IReward | undefined => {
-    if (!data || data.length == 0) return;
+const getRandomRewardByChance = (data: IReward[]): IReward | undefined => {
+    if (data.length == 0) return;
 
-    const totalChance = data.reduce((sum, item) => sum + item.chance, 0);
+    const totalChance = data.reduce((sum, item) => sum + item.probability!, 0);
     const randomValue = Math.random() * totalChance;
 
     let cumulativeChance = 0;
     for (const item of data) {
-        cumulativeChance += item.chance;
+        cumulativeChance += item.probability!;
         if (randomValue <= cumulativeChance) {
             return item;
         }
@@ -130,68 +137,63 @@ const getRandomRewardByChance = (data: IReward[] | undefined): IReward | undefin
     return;
 };
 
+const creditBundles: Record<string, number> = {
+    "/Lotus/StoreItems/Types/PickUps/Credits/1500Credits": 1500,
+    "/Lotus/StoreItems/Types/PickUps/Credits/2000Credits": 2000,
+    "/Lotus/StoreItems/Types/PickUps/Credits/2500Credits": 2500,
+    "/Lotus/StoreItems/Types/PickUps/Credits/3000Credits": 3000,
+    "/Lotus/StoreItems/Types/PickUps/Credits/4000Credits": 4000,
+    "/Lotus/StoreItems/Types/PickUps/Credits/5000Credits": 5000,
+    "/Lotus/StoreItems/Types/PickUps/Credits/7500Credits": 7500,
+    "/Lotus/StoreItems/Types/PickUps/Credits/10000Credits": 10000,
+    "/Lotus/StoreItems/Types/StoreItems/CreditBundles/Zariman/TableACreditsCommon": 15000,
+    "/Lotus/StoreItems/Types/StoreItems/CreditBundles/Zariman/TableACreditsUncommon": 30000,
+    "/Lotus/StoreItems/Types/PickUps/Credits/CorpusArenaCreditRewards/CorpusArenaRewardOneHard": 105000,
+    "/Lotus/StoreItems/Types/PickUps/Credits/CorpusArenaCreditRewards/CorpusArenaRewardTwoHard": 175000,
+    "/Lotus/StoreItems/Types/PickUps/Credits/CorpusArenaCreditRewards/CorpusArenaRewardThreeHard": 25000
+};
+
+const fusionBundles: Record<string, number> = {
+    "/Lotus/Upgrades/Mods/FusionBundles/CommonFusionBundle": 15,
+    "/Lotus/Upgrades/Mods/FusionBundles/UncommonFusionBundle": 50,
+    "/Lotus/Upgrades/Mods/FusionBundles/RareFusionBundle": 80
+};
+
 const formatRewardsToInventoryType = (
     rewards: IReward[]
 ): { InventoryChanges: IMissionInventoryUpdateRequest; MissionRewards: IMissionRewardResponse[] } => {
     const InventoryChanges: IMissionInventoryUpdateRequest = {};
     const MissionRewards: IMissionRewardResponse[] = [];
     for (const reward of rewards) {
-        if (itemCheck(InventoryChanges, MissionRewards, reward.name)) {
-            continue;
-        }
-
-        if (reward.name.includes(" Endo")) {
-            if (!InventoryChanges.FusionPoints) {
-                InventoryChanges.FusionPoints = 0;
+        if (reward.type in creditBundles) {
+            InventoryChanges.RegularCredits ??= 0;
+            InventoryChanges.RegularCredits += creditBundles[reward.type] * reward.itemCount;
+        } else {
+            const type = reward.type.replace("/Lotus/StoreItems/", "/Lotus/");
+            if (type in fusionBundles) {
+                InventoryChanges.FusionPoints ??= 0;
+                InventoryChanges.FusionPoints += fusionBundles[type] * reward.itemCount;
+            } else if (type in ExportUpgrades) {
+                addRewardResponse(InventoryChanges, MissionRewards, type, reward.itemCount, "RawUpgrades");
+            } else if (type in ExportGear) {
+                addRewardResponse(InventoryChanges, MissionRewards, type, reward.itemCount, "Consumables");
+            } else if (type in ExportRecipes) {
+                addRewardResponse(InventoryChanges, MissionRewards, type, reward.itemCount, "Recipes");
+            } else if (type in ExportRelics) {
+                addRewardResponse(InventoryChanges, MissionRewards, type, reward.itemCount, "MiscItems");
+            } else {
+                logger.error(`rolled reward ${reward.itemCount}X ${reward.type} but unsure how to give it`);
             }
-            InventoryChanges.FusionPoints += getCountFromName(reward.name);
-        } else if (reward.name.includes(" Credits Cache") || reward.name.includes("Return: ")) {
-            if (!InventoryChanges.RegularCredits) {
-                InventoryChanges.RegularCredits = 0;
-            }
-            InventoryChanges.RegularCredits += getCountFromName(reward.name);
         }
     }
     return { InventoryChanges, MissionRewards };
 };
 
-const itemCheck = (
-    InventoryChanges: IMissionInventoryUpdateRequest,
-    MissionRewards: IMissionRewardResponse[],
-    name: string
-) => {
-    const rewardCheck = {
-        RawUpgrades: modNames[name],
-        Consumables: gearNames[name],
-        MiscItems:
-            miscNames[name] ||
-            miscNames[name.replace(/\d+X\s*/, "")] ||
-            resourceNames[name] ||
-            resourceNames[name.replace(/\d+X\s*/, "")] ||
-            relicNames[name.replace("Relic", "Intact")] ||
-            relicNames[name.replace("Relic (Radiant)", "Radiant")],
-        Recipes: blueprintNames[name]
-    };
-    for (const key of Object.keys(rewardCheck) as IInventoryFieldType[]) {
-        if (rewardCheck[key]) {
-            addRewardResponse(InventoryChanges, MissionRewards, name, rewardCheck[key], key);
-            return true;
-        }
-    }
-    return false;
-};
-
-const getCountFromName = (name: string) => {
-    const regex = /(^(?:\d{1,3}(?:,\d{3})*(?:\.\d+)?)(\s|X))|(\s(?:\d{1,3}(?:,\d{3})*(?:\.\d+)?)$)/;
-    const countMatches = name.match(regex);
-    return countMatches ? parseInt(countMatches[0].replace(/,/g, ""), 10) : 1;
-};
-
 const addRewardResponse = (
     InventoryChanges: IMissionInventoryUpdateRequest,
     MissionRewards: IMissionRewardResponse[],
-    ItemName: string,
     ItemType: string,
+    ItemCount: number,
     InventoryCategory: IInventoryFieldType
 ) => {
     if (!ItemType) return;
@@ -199,9 +201,6 @@ const addRewardResponse = (
     if (!InventoryChanges[InventoryCategory]) {
         InventoryChanges[InventoryCategory] = [];
     }
-
-    const ItemCount = getCountFromName(ItemName);
-    const TweetText = `${ItemName}`;
 
     const existReward = InventoryChanges[InventoryCategory]!.find(item => item.ItemType === ItemType);
     if (existReward) {
@@ -214,40 +213,12 @@ const addRewardResponse = (
         InventoryChanges[InventoryCategory]!.push({ ItemType, ItemCount });
         MissionRewards.push({
             ItemCount,
-            TweetText,
+            TweetText: ItemType, // ensure if/how this even still used, or if it's needed at all
             ProductCategory: InventoryCategory,
             StoreItem: ItemType.replace("/Lotus/", "/Lotus/StoreItems/"),
             TypeName: ItemType
         });
     }
 };
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const _missionRewardsCheckAllNamings = () => {
-    let tempRewards: IReward[] = [];
-    Object.values(missionsDropTable as { [key: string]: IReward[] }).forEach(rewards => {
-        rewards.forEach(reward => {
-            tempRewards.push(reward);
-        });
-    });
-    tempRewards = tempRewards
-        .filter(reward => !modNames[reward.name])
-        .filter(reward => !miscNames[reward.name])
-        .filter(reward => !miscNames[reward.name.replace(/\d+X\s*/, "")])
-        .filter(reward => !resourceNames[reward.name])
-        .filter(reward => !resourceNames[reward.name.replace(/\d+X\s*/, "")])
-        .filter(reward => !gearNames[reward.name])
-        .filter(reward => {
-            return (
-                !relicNames[reward.name.replace("Relic", "Intact")] &&
-                !relicNames[reward.name.replace("Relic (Radiant)", "Radiant")]
-            );
-        })
-        .filter(reward => !blueprintNames[reward.name])
-        .filter(reward => !reward.name.includes(" Endo"))
-        .filter(reward => !reward.name.includes(" Credits Cache") && !reward.name.includes("Return: "));
-    logger.debug(`temp rewards`, { tempRewards });
-};
-// _missionRewardsCheckAllNamings();
 
 export { getRewards, combineRewardAndLootInventory };

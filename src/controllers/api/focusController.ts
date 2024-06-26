@@ -3,7 +3,7 @@ import { getAccountIdForRequest } from "@/src/services/loginService";
 import { getInventory, addMiscItems } from "@/src/services/inventoryService";
 import { IMiscItem, TFocusPolarity } from "@/src/types/inventoryTypes/inventoryTypes";
 import { logger } from "@/src/utils/logger";
-import baseFocusPointCosts from "@/static/json/baseFocusPointCosts.json";
+import { ExportFocusUpgrades } from "warframe-public-export-plus";
 
 // eslint-disable-next-line @typescript-eslint/no-misused-promises
 export const focusController: RequestHandler = async (req, res) => {
@@ -15,7 +15,7 @@ export const focusController: RequestHandler = async (req, res) => {
             res.end();
             break;
         case FocusOperation.UnlockWay: {
-            const focusType = (JSON.parse(req.body.toString()) as IWayRequest).FocusType;
+            const focusType = (JSON.parse(String(req.body)) as IWayRequest).FocusType;
             const focusPolarity = focusTypeToPolarity(focusType);
             const inventory = await getInventory(accountId);
             const cost = inventory.FocusAbility ? 50_000 : 0;
@@ -32,7 +32,7 @@ export const focusController: RequestHandler = async (req, res) => {
             break;
         }
         case FocusOperation.ActivateWay: {
-            const focusType = (JSON.parse(req.body.toString()) as IWayRequest).FocusType;
+            const focusType = (JSON.parse(String(req.body)) as IWayRequest).FocusType;
             const inventory = await getInventory(accountId);
             inventory.FocusAbility = focusType;
             await inventory.save();
@@ -40,12 +40,12 @@ export const focusController: RequestHandler = async (req, res) => {
             break;
         }
         case FocusOperation.UnlockUpgrade: {
-            const request = JSON.parse(req.body.toString()) as IUnlockUpgradeRequest;
+            const request = JSON.parse(String(req.body)) as IUnlockUpgradeRequest;
             const focusPolarity = focusTypeToPolarity(request.FocusTypes[0]);
             const inventory = await getInventory(accountId);
             let cost = 0;
             for (const focusType of request.FocusTypes) {
-                cost += baseFocusPointCosts[focusType as keyof typeof baseFocusPointCosts];
+                cost += ExportFocusUpgrades[focusType].baseFocusPointCost;
                 inventory.FocusUpgrades.push({ ItemType: focusType, Level: 0 });
             }
             inventory.FocusXP[focusPolarity] -= cost;
@@ -57,7 +57,7 @@ export const focusController: RequestHandler = async (req, res) => {
             break;
         }
         case FocusOperation.LevelUpUpgrade: {
-            const request = JSON.parse(req.body.toString()) as ILevelUpUpgradeRequest;
+            const request = JSON.parse(String(req.body)) as ILevelUpUpgradeRequest;
             const focusPolarity = focusTypeToPolarity(request.FocusInfos[0].ItemType);
             const inventory = await getInventory(accountId);
             let cost = 0;
@@ -65,9 +65,6 @@ export const focusController: RequestHandler = async (req, res) => {
                 cost += focusUpgrade.FocusXpCost;
                 const focusUpgradeDb = inventory.FocusUpgrades.find(entry => entry.ItemType == focusUpgrade.ItemType)!;
                 focusUpgradeDb.Level = focusUpgrade.Level;
-                if (focusUpgrade.IsUniversal) {
-                    focusUpgradeDb.IsUniversal = true;
-                }
             }
             inventory.FocusXP[focusPolarity] -= cost;
             await inventory.save();
@@ -77,8 +74,38 @@ export const focusController: RequestHandler = async (req, res) => {
             });
             break;
         }
+        case FocusOperation.UnbindUpgrade: {
+            const request = JSON.parse(String(req.body)) as IUnbindUpgradeRequest;
+            const focusPolarity = focusTypeToPolarity(request.FocusTypes[0]);
+            const inventory = await getInventory(accountId);
+            inventory.FocusXP[focusPolarity] -= 750_000 * request.FocusTypes.length;
+            addMiscItems(inventory, [
+                {
+                    ItemType: "/Lotus/Types/Gameplay/Eidolon/Resources/SentientShards/SentientShardBrilliantItem",
+                    ItemCount: request.FocusTypes.length * -1
+                }
+            ]);
+            request.FocusTypes.forEach(type => {
+                const focusUpgradeDb = inventory.FocusUpgrades.find(entry => entry.ItemType == type)!;
+                focusUpgradeDb.IsUniversal = true;
+            });
+            await inventory.save();
+            res.json({
+                FocusTypes: request.FocusTypes,
+                FocusPointCosts: {
+                    [focusPolarity]: 750_000 * request.FocusTypes.length
+                },
+                MiscItemCosts: [
+                    {
+                        ItemType: "/Lotus/Types/Gameplay/Eidolon/Resources/SentientShards/SentientShardBrilliantItem",
+                        ItemCount: request.FocusTypes.length
+                    }
+                ]
+            });
+            break;
+        }
         case FocusOperation.ConvertShard: {
-            const request = JSON.parse(req.body.toString()) as IConvertShardRequest;
+            const request = JSON.parse(String(req.body)) as IConvertShardRequest;
             // Tally XP
             let xp = 0;
             for (const shard of request.Shards) {
@@ -110,6 +137,7 @@ enum FocusOperation {
     UnlockUpgrade = "3",
     LevelUpUpgrade = "4",
     ActivateWay = "5",
+    UnbindUpgrade = "8",
     ConvertShard = "9"
 }
 
@@ -130,6 +158,11 @@ interface ILevelUpUpgradeRequest {
         Level: number;
         IsActiveAbility: boolean;
     }[];
+}
+
+interface IUnbindUpgradeRequest {
+    ShardTypes: string[];
+    FocusTypes: string[];
 }
 
 interface IConvertShardRequest {

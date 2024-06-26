@@ -31,7 +31,7 @@ import {
     IQuestKeyResponse,
     IFusionTreasure,
     ISpectreLoadout,
-    IWeaponSkin,
+    IWeaponSkinDatabase,
     ITauntHistory,
     IPeriodicMissionCompletionDatabase,
     IPeriodicMissionCompletionResponse,
@@ -398,9 +398,9 @@ const affiliationsSchema = new Schema<IAffiliation>(
     {
         Initiated: Boolean,
         Standing: Number,
-        Title: String,
-        FreeFavorsEarned: [Number],
-        FreeFavorsUsed: [Number],
+        Title: Number,
+        FreeFavorsEarned: { type: [Number], default: undefined },
+        FreeFavorsUsed: { type: [Number], default: undefined },
         Tag: String
     },
     { _id: false }
@@ -514,7 +514,7 @@ const spectreLoadoutsSchema = new Schema<ISpectreLoadout>(
     { _id: false }
 );
 
-const weaponSkinsSchema = new Schema<IWeaponSkin>(
+const weaponSkinsSchema = new Schema<IWeaponSkinDatabase>(
     {
         ItemType: String
     },
@@ -525,7 +525,13 @@ weaponSkinsSchema.virtual("ItemId").get(function () {
     return { $oid: this._id.toString() };
 });
 
-weaponSkinsSchema.set("toJSON", { virtuals: true });
+weaponSkinsSchema.set("toJSON", {
+    virtuals: true,
+    transform(_doc, ret, _options) {
+        delete ret._id;
+        delete ret.__v;
+    }
+});
 
 const tauntHistorySchema = new Schema<ITauntHistory>(
     {
@@ -628,6 +634,7 @@ const inventorySchema = new Schema<IInventoryDatabase, InventoryDocumentProps>(
         DailyAffiliationNecraloid: Number,
         DailyAffiliationZariman: Number,
         DailyAffiliationKahl: Number,
+        DailyAffiliationCavia: Number,
 
         //Daily Focus limit
         DailyFocus: Number,
@@ -975,6 +982,8 @@ type InventoryDocumentProps = {
     SpaceGuns: Types.DocumentArray<IEquipmentDatabase>;
     SpaceMelee: Types.DocumentArray<IEquipmentDatabase>;
     SentinelWeapons: Types.DocumentArray<IEquipmentDatabase>;
+    Hoverboards: Types.DocumentArray<IEquipmentDatabase>;
+    WeaponSkins: Types.DocumentArray<IWeaponSkinDatabase>;
 };
 
 // eslint-disable-next-line @typescript-eslint/ban-types
