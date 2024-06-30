@@ -6,7 +6,6 @@
     body.logged-in #sidebar {
         position: sticky;
         top: 5rem;
-        height: 100px;
         margin-right: 3rem;
     }
 
@@ -26,4 +25,9 @@ td.text-end > a > svg {
     height: 1em;
     margin-left: 0.5em;
     margin-bottom: 4px; /* to centre the icon */
+}
+
+/* if an item name is super long, ensure it doesn't prevent the user from using actions */
+.card-body {
+    overflow: auto;
 }
