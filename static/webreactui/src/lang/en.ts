@@ -42,7 +42,12 @@ export const en = {
       log_in: {
         navbar: {
           home: "Home",
-          inventory: "Inventory",
+          inventory: {
+            title: "Inventory",
+            frames: "Frames",
+            mods: "Mods",
+            weapons: "Weapons",
+          }
         },
       },
     },
@@ -146,12 +151,90 @@ export const en = {
         buttons: {
           submit: "Login",
         },
-      }
+      },
+      frame_form_create: {
+        title: "Frame Form",
+        fields: {
+          name: {
+            label: "Name",
+            placeholder: "Name",
+            error: "Invalid name",
+          },
+          frame: {
+            label: "Frame",
+            error: "Invalid frame",
+            tooltip: "Select a frame",
+          },
+          is_max_rank: {
+            label: "Max Rank",
+            error: "Invalid rank",
+            tooltip: "Max rank the frame",
+          },
+        },
+        buttons: {
+          submit: "Create",
+        },
+      },
     },
     mod_item: {
       fields: {
         quantity: "<qty/> <blue>{{quantity}}</blue>",
         mod_rank: "Rank: <blue>{{mod_rank}}</blue>/<blue>{{mod_max_rank}}</blue>",
+      },
+    },
+    frame_card: {
+      fields: {
+        quantity: "<qty/> <blue>{{quantity}}</blue>",
+      },
+      buttons: {
+        max_rank: {
+          tooltip: "Max Rank",
+        },
+        rename: {
+          tooltip: "Rename",
+        },
+        view: {
+          tooltip: "View",
+        },
+        delete: {
+          tooltip: "Delete",
+        },
+      },
+      prompt: {
+        rename: {
+          title: "Rename Frame",
+          field: {
+            label: "New Name",
+          },
+        },
+      },
+      success: {
+        rename: {
+          title: "Rename Frame Success",
+          message: "Frame renamed successfully.",
+        },
+        delete: {
+          title: "Delete Frame Success",
+          message: "Frame deleted successfully.",
+        },
+        max_rank: {
+          title: "Max Rank Frame Success",
+          message: "Frame max ranked successfully.",
+        }
+      },
+      errors: {
+        rename: {
+          title: "Rename Frame Error",
+          message: "An error occurred while trying to rename frame.",
+        },
+        delete: {
+          title: "Delete Frame Error",
+          message: "An error occurred while trying to delete frame.",
+        },
+        max_rank: {
+          title: "Max Rank Frame Error",
+          message: "An error occurred while trying to max rank frame.",
+        }
       },
     },
   },

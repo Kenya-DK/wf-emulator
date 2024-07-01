@@ -1,3 +1,7 @@
 export * from './home'
 export * from './auth/login'
 export * from './inventory'
+export * from './inventory/frames'
+export * from './inventory/frames/edit'
+export * from './inventory/mods'
+export * from './inventory/weapons'

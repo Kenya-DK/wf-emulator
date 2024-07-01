@@ -46,21 +46,14 @@ interface ILoggerConfig {
     level: string; // "fatal" | "error" | "warn" | "info" | "http" | "debug" | "trace";
 }
 
-export const updateConfig = async (data: string) => {
+const saveConfigToFile = async (configNew: IConfig) => {
     amnesia = true;
-    await fsPromises.writeFile(configPath, data);
-    Object.assign(config, JSON.parse(data));
-};
-
-
-const saveConfigToFile = () => {
-    const fs = require("fs");
-    fs.writeFileSync("config.json", JSON.stringify(config, null, 2));
+    await fsPromises.writeFile(configPath, JSON.stringify(configNew, null, 2));
+    Object.assign(config, configNew);
 }
 
-export const updateConfig = (newConfig: IConfig, saveToFile = true) => {
+export const updateConfig = async (newConfig: IConfig, saveToFile = true) => {
     Object.assign(config, newConfig);
-    console.log("Updated config", config);
     if (saveToFile)
-        saveConfigToFile();
+        saveConfigToFile(config);
 }

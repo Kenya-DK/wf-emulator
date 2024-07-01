@@ -1,17 +1,17 @@
 export interface CacheResponse {
-  items: CacheItem[];
+  weapons: CacheBaseItem[];
+  items: CacheBaseItem[];
+  mods: CacheBaseItem[];
+  frames: CacheBaseItem[];
   badItems: { [key: string]: string };
 }
 
-export enum BadItem {
-  BrokenBeginnerIntermediate = "broken (beginner/intermediate)",
-  InnateDamage = "innate-damage",
-  UnreleasedUnobtainable = "unreleased/unobtainable",
-  UnveiledRiven = "unveiled-riven",
-}
-
-export interface CacheItem {
+export interface CacheBaseItem {
   uniqueName: string;
   name: string;
-  fusionLimit?: number;
+}
+export interface CacheItemMod {
+  uniqueName: string;
+  name: string;
+  maxRank?: number;
 }

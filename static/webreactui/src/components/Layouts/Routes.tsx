@@ -9,8 +9,11 @@ import { AuthenticatedGate } from '@components'
 // Home Routes
 import { HomePage } from '@pages'
 
-// Home Routes
-import { InventoryPage } from '@pages'
+// Inventory Routes
+import { FramesPage } from '@pages'
+import { FrameEditPage } from '@pages'
+import { ModsPage } from '@pages'
+import { WeaponsPage } from '@pages'
 
 // Auth Routes
 import { LoginPage } from '@pages'
@@ -29,7 +32,14 @@ export function AppRoutes() {
           <Route path="/webui" element={<LogInLayout />}>
             <Route element={<AuthenticatedGate goTo="/webui/auth/login" />} >
               <Route index element={<HomePage />} />
-              <Route path='/webui/inventory' element={<InventoryPage />} />
+              <Route path='/webui/inventory'  >
+                <Route path="frames">
+                  <Route index element={<FramesPage />} />
+                  <Route path="edit/:id" element={<FrameEditPage />} />
+                </Route>
+                <Route path="mods" element={<ModsPage />} />
+                <Route path="weapons" element={<WeaponsPage />} />
+              </Route>
             </Route>
           </Route>
         </Route>

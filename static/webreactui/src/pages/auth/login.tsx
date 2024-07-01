@@ -17,9 +17,11 @@ export function LoginPage() {
   const useTranslateSuccess = (key: string, context?: { [key: string]: any }, i18Key?: boolean) => useTranslatePage(`success.${key}`, { ...context }, i18Key)
 
   useEffect(() => {
-    if (email && password)
+    if (email != "" && password != "") {
       logInMutation.mutate({ email, password });
-  }, [email, password]);
+    }
+  }, [email, password])
+
 
   // Mutations
   const logInMutation = useMutation({
@@ -30,8 +32,8 @@ export function LoginPage() {
     },
     onSuccess: async (u) => {
       notifications.show({ title: useTranslateSuccess("login.title"), message: useTranslateSuccess("login.message", { name: u.DisplayName }), color: "green.7" });
+      await refreshInventoryMutation.mutateAsync();
       SendEvent(Events.SetUserName, u.DisplayName)
-      refreshInventoryMutation.mutate();
     },
     onError: (err) => {
       console.error(err);
@@ -39,6 +41,9 @@ export function LoginPage() {
       setPassword("");
     }
   })
+  // if (email != "" && password != "") {
+  //   logInMutation.mutate({ email, password });
+  // }
 
   const refreshInventoryMutation = useMutation({
     mutationFn: () => api.inventory.refreshInventory(),

@@ -1,7 +1,13 @@
 import { RequestHandler } from "express";
-import { MinItem, MinWeapon, warframes, items, getEnglishString } from "@/src/services/itemDataService";
-import badItems from "@/static/json/exclude-mods.json";
-import { ExportArcanes, ExportWeapons } from "warframe-public-export-plus";
+import { getEnglishString } from "@/src/services/itemDataService";
+import {
+    ExportArcanes,
+    ExportGear,
+    ExportResources,
+    ExportUpgrades,
+    ExportWarframes,
+    ExportWeapons
+} from "warframe-public-export-plus";
 
 interface ListedItem {
     uniqueName: string;
@@ -9,81 +15,69 @@ interface ListedItem {
     maxRank?: number;
 }
 
-function reduceItems(items: MinItem[]): ListedItem[] {
-    return items.map((item: MinItem): ListedItem => {
-        return {
-            uniqueName: item.uniqueName,
-            name: item.name,
-            maxRank: (item as any).fusionLimit
-        };
-    });
-}
-
 const getCacheController: RequestHandler = (_req, res) => {
-    const mods = reduceItems(items.filter(item => item.category == "Mods"));
-    const getRivenMods = items.filter(mod => mod.uniqueName.includes("/Lotus/Upgrades/Mods/Randomized") && mod.category == "Mods") as any[];
-    const rivenUpgrades: { [id: string]: any[] } = {};
-    for (const mod of getRivenMods) {
-        if (!mod.upgradeEntries)
-            continue;
-        for (const upgrade of mod.upgradeEntries) {
-            if (!rivenUpgrades[mod.uniqueName])
-                rivenUpgrades[mod.uniqueName] = [];
-
-            const value = upgrade.upgradeValues?.[0];
-            if (!value)
-                continue;
-            delete upgrade.upgradeValues;
-            rivenUpgrades[mod.uniqueName].push({
-                ...upgrade,
-                value: value.value,
-                locTag: value.locTag,
-            });
+    let weapons: ListedItem[] = [];
+    let items: ListedItem[] = [];
+    const mods: ListedItem[] = [];
+    for (const [uniqueName, item] of Object.entries(ExportWeapons)) {
+        if (item.productCategory !== "OperatorAmps") {
+            if (item.totalDamage !== 0) {
+                weapons.push({
+                    uniqueName,
+                    name: getEnglishString(item.name)
+                });
+            } else if (!item.excludeFromCodex) {
+                items.push({
+                    uniqueName: "MiscItems:" + uniqueName,
+                    name: getEnglishString(item.name)
+                });
+            }
         }
     }
 
-
-    // Available items
-    let availableItems: any = [];
-
-    // Get all available arcanes
-    for (const [uniqueName, arcane] of Object.entries(ExportArcanes)) {
-        availableItems.push({
-            uniqueName: uniqueName,
-            name: getEnglishString(arcane.name)
+    for (const [uniqueName, item] of Object.entries(ExportResources)) {
+        items.push({
+            uniqueName: "MiscItems:" + uniqueName,
+            name: getEnglishString(item.name)
         });
     }
 
-    // Get all available mods
-    availableItems = availableItems.concat(mods);
+    for (const [uniqueName, item] of Object.entries(ExportGear)) {
+        items.push({
+            uniqueName: "Consumables:" + uniqueName,
+            name: getEnglishString(item.name)
+        });
+    }
 
-    // Get all available warframes
-    availableItems = availableItems.concat(reduceItems(warframes));
-
-    // Get all available weapons
-    availableItems = availableItems.concat(Object.entries(ExportWeapons)
-        .filter(([_uniqueName, weapon]) => weapon.productCategory !== "OperatorAmps" && weapon.totalDamage !== 0)
-        .map(([uniqueName, weapon]) => {
+    const badItems: Record<string, boolean> = {};
+    for (const [uniqueName, upgrade] of Object.entries(ExportUpgrades)) {
+        mods.push({
+            uniqueName,
+            name: getEnglishString(upgrade.name),
+            maxRank: upgrade.fusionLimit
+        });
+        if (upgrade.isStarter || upgrade.isFrivolous || upgrade.upgradeEntries) {
+            badItems[uniqueName] = true;
+        }
+    }
+    for (const [uniqueName, arcane] of Object.entries(ExportArcanes)) {
+        mods.push({
+            uniqueName,
+            name: getEnglishString(arcane.name)
+        });
+    }
+    let frames: ListedItem[] = Object.entries(ExportWarframes).filter(([_uniqueName, warframe]) => warframe.productCategory == "Suits")
+        .map(([uniqueName, warframe]) => {
             return {
                 uniqueName,
-                name: getEnglishString(weapon.name)
+                name: getEnglishString(warframe.name)
             };
-        }));
-
-    // Get all available misc items
-    availableItems = availableItems.concat(reduceItems(
-        items.filter(
-            item =>
-                item.category == "Misc" ||
-                item.category == "Resources" ||
-                item.category == "Fish" ||
-                ((item as any).productCategory == "Pistols" && (item as MinWeapon).totalDamage == 0)
-        )
-    ));
-
+        });
     res.json({
-        riven_tags: rivenUpgrades,
-        items: availableItems,
+        weapons: weapons,
+        items: items,
+        mods,
+        frames,
         badItems
     });
 };

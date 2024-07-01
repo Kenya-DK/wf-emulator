@@ -1,5 +1,5 @@
 
-import { CacheItem, CacheResponse, RestClient } from "..";
+import { CacheBaseItem, CacheItemMod, CacheResponse, RestClient } from "..";
 
 export class CacheModule {
   private _cache: CacheResponse | undefined;
@@ -16,11 +16,35 @@ export class CacheModule {
     this._cache = res;
   }
 
-  getCachedItemByUniqueId(uniqueId: string): CacheItem | undefined {
+  getWarframes(): CacheBaseItem[] | undefined {
+    if (!this._cache)
+      return undefined;
+    return this._cache.frames;
+  }
+
+  getWeaponByUniqueId(uniqueId: string): CacheBaseItem | undefined {
+    if (!this._cache)
+      return undefined;
+    return this._cache.weapons.find(i => i.uniqueName === uniqueId);
+  }
+  getItemByUniqueId(uniqueId: string): CacheBaseItem | undefined {
     if (!this._cache)
       return undefined;
     return this._cache.items.find(i => i.uniqueName === uniqueId);
   }
-
-
+  getModByUniqueId(uniqueId: string): CacheItemMod | undefined {
+    if (!this._cache)
+      return undefined;
+    return this._cache.mods.find(i => i.uniqueName === uniqueId);
+  }
+  getFrameByUniqueId(uniqueId: string): CacheBaseItem | undefined {
+    if (!this._cache)
+      return undefined;
+    return this._cache.frames.find(i => i.uniqueName === uniqueId);
+  }
+  getBadItemByUniqueId(uniqueId: string): string | undefined {
+    if (!this._cache)
+      return undefined;
+    return this._cache.badItems[uniqueId];
+  }
 }

@@ -41,7 +41,7 @@ export namespace OpenWF {
     MiscItems: any[];
     RawUpgrades: BaseItem[];
     Upgrades: Upgrade[];
-    Suits: DataKnife[];
+    Suits: DataSuit[];
     LongGuns: DataKnife[];
     Pistols: DataKnife[];
     Melee: DataKnife[];
@@ -170,6 +170,23 @@ export namespace OpenWF {
   export interface Bin {
     Slots: number;
   }
+  export interface DataSuit {
+    ItemType: string;
+    ItemName?: string;
+    XP?: number;
+    Polarized: number;
+    Configs: InvConfig[];
+    Polarity: Polarity[];
+    ItemId: ItemID;
+    UpgradeVer?: number;
+    FocusLens?: string;
+    Features?: number;
+  }
+
+  export interface Polarity {
+    Slot: number;
+    Value: string;
+  }
 
   export interface DataKnife {
     ItemType: string;
@@ -181,12 +198,26 @@ export namespace OpenWF {
     ModularParts?: any[];
   }
 
+
   export interface InvConfig {
     Skins: string[];
-    Upgrades: any[];
-    PvpUpgrades: any[];
-    Songs: any[];
+    sigcol: Col;
+    Name: string;
+    Upgrades: string[];
+    attcol: Col;
+    pricol: Col;
+    syancol: Col;
   }
+
+  export interface Col {
+    t0: number;
+    t1: number;
+    t2: number;
+    t3: number;
+    m0?: number;
+    en: number;
+  }
+
 
   export interface ItemID {
     $oid: string;

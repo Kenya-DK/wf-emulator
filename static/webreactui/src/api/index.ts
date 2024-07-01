@@ -22,7 +22,7 @@ export class RestClient {
 
 
   // Methods  
-  private async sendRequest<T>(url: string, method: string, parameters?: string[], body?: any, _config: AxiosRequestConfig = {}): Promise<T> {
+  private async sendRequest<T>(url: string, method: string, parameters?: string[], body?: any, contentType?: string, _config: AxiosRequestConfig = {}): Promise<T> {
     if (!parameters) parameters = [];
     if (this.accountId)
       parameters.push(`accountId=${this.accountId}`);
@@ -32,7 +32,7 @@ export class RestClient {
       url: `${url}${(parameters && parameters.length > 0) ? `?${parameters.join("&")}` : ""}`,
       method,
       headers: {
-        'Content-Type': 'text/plain',
+        'Content-Type': contentType || 'text/plain',
       },
       data: body,
     });
@@ -50,9 +50,9 @@ export class RestClient {
     return await this.sendRequest<T>(url, "PUT", undefined, body);
   }
 
-  async post<T>(path: string, body?: { [key: string]: any }, parameters?: string[]): Promise<T> {
+  async post<T>(path: string, body?: { [key: string]: any }, parameters?: string[], contentType?: string): Promise<T> {
     const url = `${this.baseUrl}/${path}`;
-    return await this.sendRequest<T>(url, "POST", parameters, body);
+    return await this.sendRequest<T>(url, "POST", parameters, body, contentType);
   }
 
   async delete<T>(path: string, body?: { [key: string]: any }): Promise<T> {
@@ -102,3 +102,9 @@ const SendDataEvent = async (event: string, operation: EventOperation, data: any
 
 export { OnEvent, OnDataEvent, OffEvent, OffDataEvent, SendEvent, SendDataEvent }
 export const api = new RestClient(import.meta.env.VITE_API_URL)
+declare global {
+  interface Window {
+    api: RestClient;
+  }
+}
+window.api = api;

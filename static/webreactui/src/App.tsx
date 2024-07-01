@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ModalsProvider } from '@mantine/modals';
 import { AppContextProvider } from '@contexts';
-import { AppRoutes } from '@components';
+import { AppRoutes, PromptModal } from '@components';
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import { en } from './lang/en'
@@ -17,9 +17,12 @@ const queryClient = new QueryClient({
 })
 
 const modals = {
-  // prompt: PromptModal
+  prompt: PromptModal
   /* ...other modals */
 };
+export interface MantineModalsOverride {
+  modals: typeof modals;
+}
 i18n
   .use(initReactI18next)
   .init({

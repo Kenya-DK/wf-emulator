@@ -3,12 +3,16 @@ export * from './Forms'
 export * from './Layouts'
 export * from './AuthenticatedGate'
 export * from "./NavbarMinimalColored";
+export * from "./NavbarNested";
+export * from "./NavbarLinksGroup";
 export * from './Header';
 export * from './UserMenu';
 export * from './TextTranslate';
 export * from './Loading';
 export * from './TooltipIcon';
 export * from './ItemMod';
+export * from './FrameCard';
 export * from './StatsWithIcon';
 export * from './SearchField';
 export * from './ActionWithTooltip';
+export * from "./Modals";

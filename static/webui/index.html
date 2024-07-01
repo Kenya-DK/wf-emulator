@@ -1,10 +1,10 @@
 <!doctype html>
 <html lang="en" data-bs-theme="dark">
 <head>
-    <title>OpenWF WebUI</title>
+    <title>OpenWF webuiold</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" href="/webui/libs/bootstrap.min.css" />
-    <link rel="stylesheet" href="/webui/style.css" />
+    <link rel="stylesheet" href="/webuiold/libs/bootstrap.min.css" />
+    <link rel="stylesheet" href="/webuiold/style.css" />
 </head>
 <body>
     <nav class="navbar sticky-top bg-body-tertiary">
@@ -12,11 +12,11 @@
             <button class="navbar-toggler d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar" aria-label="Toggle sidebar">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <a class="navbar-brand">OpenWF WebUI</a>
+            <a class="navbar-brand">OpenWF webuiold</a>
             <div class="nav-item dropdown">
                 <button class="nav-link dropdown-toggle displayname" data-bs-toggle="dropdown" aria-expanded="false"></button>
                 <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="/webui/" onclick="logout();">Logout</a></li>
+                    <li><a class="dropdown-item" href="/webuiold/" onclick="logout();">Logout</a></li>
                 </ul>
             </div>
         </div>
@@ -37,20 +37,20 @@
                 <div class="navbar p-0">
                     <ul class="navbar-nav justify-content-end">
                         <li class="nav-item">
-                            <a class="nav-link" href="/webui/inventory" data-bs-dismiss="offcanvas" data-bs-target="#sidebar">Inventory</a>
+                            <a class="nav-link" href="/webuiold/inventory" data-bs-dismiss="offcanvas" data-bs-target="#sidebar">Inventory</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="/webui/mods" data-bs-dismiss="offcanvas" data-bs-target="#sidebar">Mods</a>
+                            <a class="nav-link" href="/webuiold/mods" data-bs-dismiss="offcanvas" data-bs-target="#sidebar">Mods</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="/webui/cheats" data-bs-dismiss="offcanvas" data-bs-target="#sidebar">Cheats</a>
+                            <a class="nav-link" href="/webuiold/cheats" data-bs-dismiss="offcanvas" data-bs-target="#sidebar">Cheats</a>
                         </li>
                     </ul>
                 </div>
             </div>
         </div>
         <div class="w-100">
-            <div data-route="/webui/" data-title="Login | OpenWF WebUI">
+            <div data-route="/webuiold/" data-title="Login | OpenWF webuiold">
                 <p>Login using your OpenWF account credentials.</p>
                 <form onsubmit="doLogin();return false;">
                     <label for="email">Email address</label>
@@ -62,7 +62,7 @@
                     <button class="btn btn-primary" type="submit">Login</button>
                 </form>
             </div>
-            <div data-route="/webui/inventory" data-title="Inventory | OpenWF WebUI">
+            <div data-route="/webuiold/inventory" data-title="Inventory | OpenWF webuiold">
                 <p class="mb-4">
                     Note: Changes made here will only be reflected in-game when the game re-downloads your
                     inventory. Visiting the navigation should be the easiest way to trigger that.
@@ -106,7 +106,7 @@
                     </div>
                 </div>
             </div>
-            <div id="powersuit-route" data-route="~ /webui/powersuit/(.+)" data-title="Inventory | OpenWF WebUI">
+            <div id="powersuit-route" data-route="~ /webuiold/powersuit/(.+)" data-title="Inventory | OpenWF webuiold">
                 <h3 class="mb-0"></h3>
                 <p class="text-body-secondary"></p>
                 <div class="card mb-4">
@@ -125,7 +125,7 @@
                     </div>
                 </div>
             </div>
-            <div data-route="/webui/mods" data-title="Mods | OpenWF WebUI">
+            <div data-route="/webuiold/mods" data-title="Mods | OpenWF webuiold">
                 <p class="mb-4">
                     Note: Changes made here will only be reflected in-game when the game re-downloads your
                     inventory. Visiting the navigation should be the easiest way to trigger that.
@@ -174,7 +174,7 @@
                     </div>
                 </div>
             </div>
-            <div data-route="/webui/cheats, /webui/settings" data-title="Cheats | OpenWF WebUI">
+            <div data-route="/webuiold/cheats, /webuiold/settings" data-title="Cheats | OpenWF webuiold">
                 <div class="row">
                     <div class="col-lg-4">
                         <div class="card mb-4">
@@ -279,11 +279,11 @@
     <datalist id="datalist-miscitems"></datalist>
     <datalist id="datalist-mods"></datalist>
     <datalist id="datalist-archonCrystalUpgrades"></datalist>
-    <script src="/webui/libs/jquery-3.6.0.min.js"></script>
-    <script src="/webui/libs/whirlpool-js.min.js"></script>
-    <script src="/webui/libs/single.js"></script>
-    <script src="/webui/riven-tool/RivenParser.js"></script>
-    <script src="/webui/script.js"></script>
-    <script src="/webui/libs/bootstrap.bundle.min.js"></script>
+    <script src="/webuiold/libs/jquery-3.6.0.min.js"></script>
+    <script src="/webuiold/libs/whirlpool-js.min.js"></script>
+    <script src="/webuiold/libs/single.js"></script>
+    <script src="/webuiold/riven-tool/RivenParser.js"></script>
+    <script src="/webuiold/script.js"></script>
+    <script src="/webuiold/libs/bootstrap.bundle.min.js"></script>
 </body>
 </html>
