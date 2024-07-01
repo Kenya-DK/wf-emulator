@@ -35,6 +35,36 @@ webuiRouter.get("/webui/cheats", (_req, res) => {
     res.sendFile(path.join(rootDir, "static/webui/index.html"));
 });
 
+
+
+
+// Redirect /webui to /webui/
+webuiRouter.use("/webuiold", (req, res, next) => {
+    if (req.originalUrl === "/") {
+        return res.redirect("/webuiold/");
+    }
+    next();
+});
+// Serve virtual routes
+webuiRouter.get("/webuiold/inventory", (_req, res) => {
+    res.sendFile(path.join(rootDir, "static/webui/index.html"));
+});
+webuiRouter.get(/webuiold\/powersuit\/(.+)/, (_req, res) => {
+    res.sendFile(path.join(rootDir, "static/webui/index.html"));
+});
+webuiRouter.get("/webuiold/mods", (_req, res) => {
+    res.sendFile(path.join(rootDir, "static/webui/index.html"));
+});
+webuiRouter.get("/webuiold/settings", (_req, res) => {
+    res.sendFile(path.join(rootDir, "static/webui/index.html"));
+});
+webuiRouter.get("/webuiold/cheats", (_req, res) => {
+    res.sendFile(path.join(rootDir, "static/webui/index.html"));
+});
+
+// Serve static files
+webuiRouter.use("/webuiold", express.static(path.join(rootDir, "static/webui")));
+
 // Serve static files
 webuiRouter.use((req, res, next) => {
     // If the request starts with /api, we don't want to serve index.html
