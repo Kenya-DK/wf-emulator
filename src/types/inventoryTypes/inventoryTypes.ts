@@ -10,8 +10,6 @@ import {
     IEquipmentDatabase
 } from "@/src/types/inventoryTypes/commonInventoryTypes";
 
-//Document extends will be deleted soon. TODO: delete and migrate uses to ...
-export interface IInventoryDatabaseDocument extends IInventoryDatabase, Document {}
 export interface IInventoryDatabase
     extends Omit<
         IInventoryResponse,
@@ -104,7 +102,8 @@ export type TSolarMapRegion =
     | "Uranus"
     | "Venus"
     | "Void"
-    | "SolarMapDeimosName";
+    | "SolarMapDeimosName"
+    | "1999MapName";
 
 //TODO: perhaps split response and database into their own files
 
@@ -125,6 +124,7 @@ export interface IInventoryResponse {
     PremiumCredits: number;
     PremiumCreditsFree: number;
     FusionPoints: number;
+    PrimeTokens: number;
     SuitBin: ISlots;
     WeaponBin: ISlots;
     SentinelBin: ISlots;
@@ -145,6 +145,7 @@ export interface IInventoryResponse {
     GiftsRemaining: number;
     HandlerPoints: number;
     MiscItems: IMiscItem[];
+    HasOwnedVoidProjectionsPreviously?: boolean;
     ChallengesFixVersion: number;
     ChallengeProgress: IChallengeProgress[];
     RawUpgrades: IRawUpgrade[];
@@ -169,6 +170,14 @@ export interface IInventoryResponse {
     PendingRecipes: IPendingRecipeResponse[];
     TrainingDate: IMongoDate;
     PlayerLevel: number;
+    Staff?: boolean;
+    Founder?: number;
+    Guide?: number;
+    Moderator?: boolean;
+    Partner?: boolean;
+    Accolades?: {
+        Heirloom?: boolean;
+    };
     Upgrades: ICrewShipSalvagedWeaponSkin[];
     EquippedGear: string[];
     DeathMarks: string[];
@@ -195,8 +204,8 @@ export interface IInventoryResponse {
     SpaceMelee: IEquipmentDatabase[];
     SpaceGuns: IEquipmentDatabase[];
     ArchwingEnabled: boolean;
-    PendingSpectreLoadouts: any[];
-    SpectreLoadouts: ISpectreLoadout[];
+    PendingSpectreLoadouts?: ISpectreLoadout[];
+    SpectreLoadouts?: ISpectreLoadout[];
     SentinelWeapons: IEquipmentDatabase[];
     Sentinels: IEquipmentDatabase[];
     EmailItems: ITypeCount[];
@@ -219,7 +228,7 @@ export interface IInventoryResponse {
     FocusUpgrades: IFocusUpgrade[];
     OperatorAmps: IEquipmentDatabase[];
     HasContributedToDojo?: boolean;
-    HWIDProtectEnabled: boolean;
+    HWIDProtectEnabled?: boolean;
     KubrowPetPrints: IKubrowPetPrint[];
     AlignmentReplay: IAlignment;
     PersonalGoalProgress: IPersonalGoalProgress[];
@@ -244,6 +253,7 @@ export interface IInventoryResponse {
     EquippedInstrument: string;
     InvasionChainProgress: IInvasionChainProgress[];
     DataKnives: IEquipmentDatabase[];
+    Motorcycles: IEquipmentDatabase[];
     NemesisHistory: INemesisHistory[];
     LastNemesisAllySpawnTime?: IMongoDate;
     Settings: ISettings;
@@ -273,6 +283,7 @@ export interface IInventoryResponse {
     NemesisAbandonedRewards: string[];
     DailyAffiliationKahl: number;
     DailyAffiliationCavia: number;
+    DailyAffiliationHex: number;
     LastInventorySync: IOid;
     NextRefill: IMongoDate; // Next time argon crystals will have a decay tick
     FoundToday?: IMiscItem[]; // for Argon Crystals
@@ -290,6 +301,7 @@ export interface IInventoryResponse {
     PendingCoupon: IPendingCoupon;
     Harvestable: boolean;
     DeathSquadable: boolean;
+    EndlessXP?: IEndlessXpProgress[];
 }
 
 export interface IAffiliation {
@@ -407,28 +419,19 @@ export interface ICrewShipSalvagedWeaponSkin {
     _id?: Types.ObjectId;
 }
 
-export interface ICrewShipWeapon {
-    ItemType: string;
-    UpgradeType?: string;
-    UpgradeFingerprint?: string;
-    Configs?: IItemConfig[];
-    UpgradeVer?: number;
-    ItemId: IOid;
-}
-
 export interface ICrewShip {
     ItemType: string;
     Configs: IItemConfig[];
-    Weapon: ICrewshipWeapon;
-    Customization: ICustomization;
+    Weapon?: ICrewShipWeapon;
+    Customization?: ICrewShipCustomization;
     ItemName: string;
-    RailjackImage: IFlavourItem;
-    CrewMembers: ICrewMembers;
+    RailjackImage?: IFlavourItem;
+    CrewMembers?: ICrewShipMembers;
     ItemId: IOid;
     _id: Types.ObjectId;
 }
 
-export interface ICrewMembers {
+export interface ICrewShipMembers {
     SLOT_A: ISlot;
     SLOT_B: ISlot;
     SLOT_C: ISlot;
@@ -438,7 +441,7 @@ export interface ISlot {
     ItemId: IOid;
 }
 
-export interface ICustomization {
+export interface ICrewShipCustomization {
     CrewshipInterior: IShipExterior;
 }
 
@@ -449,29 +452,27 @@ export interface IShipExterior {
 }
 
 export interface IShipAttachments {
-    HOOD_ORNAMENT: string; //TODO: Others are probably possible
+    HOOD_ORNAMENT: string;
 }
 
 export interface IFlavourItem {
     ItemType: string;
 }
 
-export interface IMiscItem {
-    ItemCount: number;
-    ItemType: string;
+export type IMiscItem = ITypeCount;
+
+export interface ICrewShipWeapon {
+    PILOT: ICrewShipPilotWeapon;
+    PORT_GUNS: ICrewShipPortGuns;
 }
 
-export interface ICrewshipWeapon {
-    PILOT: IPilot;
-    PORT_GUNS: IPortGuns;
-}
-
-export interface IPortGuns {
+export interface ICrewShipPilotWeapon {
     PRIMARY_A: IEquipmentSelection;
+    SECONDARY_A: IEquipmentSelection;
 }
 
-export interface IPilot extends IPortGuns {
-    SECONDARY_A: IEquipmentSelection;
+export interface ICrewShipPortGuns {
+    PRIMARY_A: IEquipmentSelection;
 }
 
 export interface IDiscoveredMarker {
@@ -513,15 +514,28 @@ export interface IFusionTreasure {
     Sockets: number;
 }
 
+export interface IHelminthFoodRecord {
+    ItemType: string;
+    Date: number;
+}
+
+export interface IHelminthResource {
+    ItemType: string;
+    Count: number;
+    RecentlyConvertedResources?: IHelminthFoodRecord[];
+}
+
 export interface IInfestedFoundry {
     Name?: string;
-    Resources?: ITypeCount[];
+    Resources?: IHelminthResource[];
     Slots?: number;
     XP?: number;
     ConsumedSuits?: IConsumedSuit[];
     InvigorationIndex?: number;
     InvigorationSuitOfferings?: string[];
     InvigorationsApplied?: number;
+    LastConsumedSuit?: IEquipmentDatabase;
+    AbilityOverrideUnlockCooldown?: Date;
 }
 
 export interface IConsumedSuit {
@@ -714,6 +728,8 @@ export interface IPendingRecipe {
     ItemType: string;
     CompletionDate: Date;
     ItemId: IOid;
+    TargetItemId?: string; // likely related to liches
+    TargetFingerprint?: string; // likely related to liches
 }
 
 export interface IPendingTrade {
@@ -803,13 +819,12 @@ export interface IPersonalTechProject {
 
 export interface IPlayerSkills {
     LPP_SPACE: number;
-    LPP_DRIFTER: number;
-    LPS_NONE: number;
     LPS_PILOTING: number;
     LPS_GUNNERY: number;
     LPS_TACTICAL: number;
     LPS_ENGINEERING: number;
     LPS_COMMAND: number;
+    LPP_DRIFTER: number;
     LPS_DRIFT_COMBAT: number;
     LPS_DRIFT_RIDING: number;
     LPS_DRIFT_OPPORTUNITY: number;
@@ -858,13 +873,14 @@ export interface IShipInventory {
 }
 
 export interface ISpectreLoadout {
-    LongGuns: string;
-    Melee: string;
-    Pistols: string;
-    PistolsFeatures: number;
-    PistolsModularParts: string[];
-    Suits: string;
     ItemType: string;
+    Suits: string;
+    LongGuns: string;
+    LongGunsModularParts?: string[];
+    Pistols: string;
+    PistolsModularParts?: string[];
+    Melee: string;
+    MeleeModularParts?: string[];
 }
 
 export interface IStepSequencer {
@@ -914,4 +930,11 @@ export interface IEvolutionProgress {
     Progress: number;
     Rank: number;
     ItemType: string;
+}
+
+export type TEndlessXpCategory = "EXC_NORMAL" | "EXC_HARD";
+
+export interface IEndlessXpProgress {
+    Category: TEndlessXpCategory;
+    Choices: string[];
 }

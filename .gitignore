@@ -17,3 +17,7 @@ yarn.lock
 # MongoDB VSCode extension playground scripts
 /database_scripts
 static/webreactui/node_modules/
+
+
+# Default Docker directory
+/docker-data

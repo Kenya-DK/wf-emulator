@@ -1,8 +1,9 @@
 import { RequestHandler } from "express";
-import { getEnglishString } from "@/src/services/itemDataService";
+import { getDict, getItemName, getString } from "@/src/services/itemDataService";
 import {
     ExportArcanes,
     ExportGear,
+    ExportRecipes,
     ExportResources,
     ExportUpgrades,
     ExportWarframes,
@@ -16,7 +17,8 @@ interface ListedItem {
     fusionLimit?: number;
 }
 
-const getItemListsController: RequestHandler = (_req, res) => {
+const getItemListsController: RequestHandler = (req, res) => {
+    const lang = getDict(typeof req.query.lang == "string" ? req.query.lang : "en");
     const weapons = [];
     const miscitems = [];
     for (const [uniqueName, item] of Object.entries(ExportWeapons)) {
@@ -24,27 +26,50 @@ const getItemListsController: RequestHandler = (_req, res) => {
             if (item.totalDamage !== 0) {
                 weapons.push({
                     uniqueName,
-                    name: getEnglishString(item.name)
+                    name: getString(item.name, lang)
                 });
             } else if (!item.excludeFromCodex) {
                 miscitems.push({
                     uniqueName: "MiscItems:" + uniqueName,
-                    name: getEnglishString(item.name)
+                    name: getString(item.name, lang)
                 });
             }
         }
     }
     for (const [uniqueName, item] of Object.entries(ExportResources)) {
+        let name = getString(item.name, lang);
+        if ("dissectionParts" in item) {
+            name = getString("/Lotus/Language/Fish/FishDisplayName", lang).split("|FISH_NAME|").join(name);
+            if (uniqueName.indexOf("Large") != -1) {
+                name = name.split("|FISH_SIZE|").join(getString("/Lotus/Language/Fish/FishSizeLargeAbbrev", lang));
+            } else if (uniqueName.indexOf("Medium") != -1) {
+                name = name.split("|FISH_SIZE|").join(getString("/Lotus/Language/Fish/FishSizeMediumAbbrev", lang));
+            } else {
+                name = name.split("|FISH_SIZE|").join(getString("/Lotus/Language/Fish/FishSizeSmallAbbrev", lang));
+            }
+        }
         miscitems.push({
-            uniqueName: "MiscItems:" + uniqueName,
-            name: getEnglishString(item.name)
+            uniqueName: item.productCategory + ":" + uniqueName,
+            name: name
         });
     }
     for (const [uniqueName, item] of Object.entries(ExportGear)) {
         miscitems.push({
             uniqueName: "Consumables:" + uniqueName,
-            name: getEnglishString(item.name)
+            name: getString(item.name, lang)
         });
+    }
+    const recipeNameTemplate = getString("/Lotus/Language/Items/BlueprintAndItem", lang);
+    for (const [uniqueName, item] of Object.entries(ExportRecipes)) {
+        if (!item.hidden) {
+            const resultName = getItemName(item.resultType);
+            if (resultName) {
+                miscitems.push({
+                    uniqueName: "Recipes:" + uniqueName,
+                    name: recipeNameTemplate.replace("|ITEM|", getString(resultName, lang))
+                });
+            }
+        }
     }
 
     const mods: ListedItem[] = [];
@@ -52,7 +77,7 @@ const getItemListsController: RequestHandler = (_req, res) => {
     for (const [uniqueName, upgrade] of Object.entries(ExportUpgrades)) {
         mods.push({
             uniqueName,
-            name: getEnglishString(upgrade.name),
+            name: getString(upgrade.name, lang),
             fusionLimit: upgrade.fusionLimit
         });
         if (upgrade.isStarter || upgrade.isFrivolous || upgrade.upgradeEntries) {
@@ -62,8 +87,11 @@ const getItemListsController: RequestHandler = (_req, res) => {
     for (const [uniqueName, arcane] of Object.entries(ExportArcanes)) {
         mods.push({
             uniqueName,
-            name: getEnglishString(arcane.name)
+            name: getString(arcane.name, lang)
         });
+        if (arcane.isFrivolous) {
+            badItems[uniqueName] = true;
+        }
     }
 
     res.json({
@@ -72,7 +100,8 @@ const getItemListsController: RequestHandler = (_req, res) => {
             .map(([uniqueName, warframe]) => {
                 return {
                     uniqueName,
-                    name: getEnglishString(warframe.name)
+                    name: getString(warframe.name, lang),
+                    exalted: warframe.exalted
                 };
             }),
         weapons,

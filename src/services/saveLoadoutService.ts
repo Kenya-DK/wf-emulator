@@ -144,7 +144,8 @@ export const handleInventoryItemConfigChange = async (
             case "Hoverboards":
             case "MechSuits":
             case "CrewShipHarnesses":
-            case "CrewShips": {
+            case "CrewShips":
+            case "Motorcycles": {
                 logger.debug(`general Item config saved of type ${equipmentName}`, { config: equipment });
 
                 const itemEntries = equipment as IItemEntry;
@@ -177,7 +178,9 @@ export const handleInventoryItemConfigChange = async (
                 break;
             }
             default: {
-                logger.error(`category not implemented: ${equipmentName}`, { config: equipment });
+                logger.warn(`loadout category not implemented, changes may be lost: ${equipmentName}`, {
+                    config: equipment
+                });
             }
             //case "KahlLoadOuts": not sure yet how to handle kahl: it is not sent in inventory
         }

@@ -2,32 +2,33 @@ import { getPersonalRooms } from "@/src/services/personalRoomsService";
 import { getShip } from "@/src/services/shipService";
 import {
     ISetShipCustomizationsRequest,
-    IShipDatabase,
     IShipDecorationsRequest,
-    IShipDecorationsResponse
+    IShipDecorationsResponse,
+    ISetPlacedDecoInfoRequest
 } from "@/src/types/shipTypes";
 import { logger } from "@/src/utils/logger";
 import { Types } from "mongoose";
 
-export const setShipCustomizations = async (shipCustomization: ISetShipCustomizationsRequest) => {
-    const ship = await getShip(new Types.ObjectId(shipCustomization.ShipId));
-
-    let shipChanges: Partial<IShipDatabase>;
+export const setShipCustomizations = async (
+    accountId: string,
+    shipCustomization: ISetShipCustomizationsRequest
+): Promise<void> => {
     if (shipCustomization.IsExterior) {
-        shipChanges = {
-            ShipExteriorColors: shipCustomization.Customization.Colors,
-            SkinFlavourItem: shipCustomization.Customization.SkinFlavourItem,
-            ShipAttachments: shipCustomization.Customization.ShipAttachments,
-            AirSupportPower: shipCustomization.AirSupportPower!
-        };
+        const ship = await getShip(new Types.ObjectId(shipCustomization.ShipId));
+        if (ship.ShipOwnerId.toString() == accountId) {
+            ship.set({
+                ShipExteriorColors: shipCustomization.Customization.Colors,
+                SkinFlavourItem: shipCustomization.Customization.SkinFlavourItem,
+                ShipAttachments: shipCustomization.Customization.ShipAttachments,
+                AirSupportPower: shipCustomization.AirSupportPower!
+            });
+            await ship.save();
+        }
     } else {
-        shipChanges = {
-            ShipInteriorColors: shipCustomization.Customization.Colors
-        };
+        const personalRooms = await getPersonalRooms(accountId);
+        personalRooms.ShipInteriorColors = shipCustomization.Customization.Colors;
+        await personalRooms.save();
     }
-    ship.set(shipChanges);
-
-    await ship.save();
 };
 
 export const handleSetShipDecorations = async (
@@ -36,12 +37,16 @@ export const handleSetShipDecorations = async (
 ): Promise<IShipDecorationsResponse> => {
     const personalRooms = await getPersonalRooms(accountId);
 
-    const rooms = placedDecoration.IsApartment ? personalRooms.Apartment.Rooms : personalRooms.Ship.Rooms;
+    const rooms =
+        placedDecoration.BootLocation == "SHOP"
+            ? personalRooms.TailorShop.Rooms
+            : placedDecoration.IsApartment
+              ? personalRooms.Apartment.Rooms
+              : personalRooms.Ship.Rooms;
 
     const roomToPlaceIn = rooms.find(room => room.Name === placedDecoration.Room);
 
     if (!roomToPlaceIn) {
-        logger.error("room not found");
         throw new Error("room not found");
     }
 
@@ -53,7 +58,6 @@ export const handleSetShipDecorations = async (
             );
 
             if (existingDecorationIndex === -1) {
-                logger.error("decoration to be moved not found");
                 throw new Error("decoration to be moved not found");
             }
 
@@ -87,7 +91,7 @@ export const handleSetShipDecorations = async (
             Type: placedDecoration.Type,
             Pos: placedDecoration.Pos,
             Rot: placedDecoration.Rot,
-            Scale: placedDecoration.Scale || 1,
+            Scale: placedDecoration.Scale,
             _id: placedDecoration.MoveId
         };
 
@@ -123,11 +127,29 @@ export const handleSetShipDecorations = async (
         Type: placedDecoration.Type,
         Pos: placedDecoration.Pos,
         Rot: placedDecoration.Rot,
-        Scale: placedDecoration.Scale || 1,
+        Scale: placedDecoration.Scale,
         _id: decoId
     });
 
     await personalRooms.save();
 
     return { DecoId: decoId.toString(), Room: placedDecoration.Room, IsApartment: placedDecoration.IsApartment };
+};
+
+export const handleSetPlacedDecoInfo = async (accountId: string, req: ISetPlacedDecoInfoRequest): Promise<void> => {
+    const personalRooms = await getPersonalRooms(accountId);
+
+    const room = personalRooms.Ship.Rooms.find(room => room.Name === req.Room);
+    if (!room) {
+        throw new Error("room not found");
+    }
+
+    const placedDeco = room.PlacedDecos?.find(x => x._id.toString() == req.DecoId);
+    if (!placedDeco) {
+        throw new Error("deco not found");
+    }
+
+    placedDeco.PictureFrameInfo = req.PictureFrameInfo;
+
+    await personalRooms.save();
 };

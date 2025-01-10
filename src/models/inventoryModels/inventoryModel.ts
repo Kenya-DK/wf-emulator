@@ -1,4 +1,4 @@
-import { Model, Schema, Types, model } from "mongoose";
+import { Document, Model, Schema, Types, model } from "mongoose";
 import {
     IFlavourItem,
     IRawUpgrade,
@@ -25,6 +25,7 @@ import {
     IPlayerSkills,
     ISettings,
     IInfestedFoundry,
+    IHelminthResource,
     IConsumedSuit,
     IQuestProgress,
     IQuestKeyDatabase,
@@ -36,7 +37,16 @@ import {
     IPeriodicMissionCompletionDatabase,
     IPeriodicMissionCompletionResponse,
     ILoreFragmentScan,
-    IEvolutionProgress
+    IEvolutionProgress,
+    IEndlessXpProgress,
+    ICrewShipPortGuns,
+    ICrewShipCustomization,
+    ICrewShipWeapon,
+    ICrewShipMembers,
+    ICrewShip,
+    ICrewShipPilotWeapon,
+    IShipExterior,
+    IHelminthFoodRecord
 } from "../../types/inventoryTypes/inventoryTypes";
 import { IOid } from "../../types/commonTypes";
 import {
@@ -50,8 +60,9 @@ import {
     IArchonCrystalUpgrade
 } from "@/src/types/inventoryTypes/commonInventoryTypes";
 import { toMongoDate, toOid } from "@/src/helpers/inventoryHelpers";
+import { EquipmentSelectionSchema } from "./loadoutModel";
 
-const typeCountSchema = new Schema<ITypeCount>({ ItemType: String, ItemCount: Number }, { _id: false });
+export const typeCountSchema = new Schema<ITypeCount>({ ItemType: String, ItemCount: Number }, { _id: false });
 
 const focusXPSchema = new Schema<IFocusXP>(
     {
@@ -223,6 +234,9 @@ const EquipmentSchema = new Schema<IEquipmentDatabase>(
         UnlockLevel: Number,
         Expiry: Date,
         SkillTree: String,
+        OffensiveUpgrade: String,
+        DefensiveUpgrade: String,
+        UpgradesExpiry: Date,
         ArchonCrystalUpgrades: { type: [ArchonCrystalUpgradeSchema], default: undefined }
     },
     { id: false }
@@ -316,7 +330,7 @@ const MailboxSchema = new Schema<IMailbox>(
     {
         LastInboxId: {
             type: Schema.Types.ObjectId,
-            set: (v: IMailbox["LastInboxId"]) => v.$oid.toString()
+            set: (v: IMailbox["LastInboxId"]): string => v.$oid.toString()
         }
     },
     { id: false, _id: false }
@@ -425,18 +439,17 @@ const seasonChallengeHistorySchema = new Schema<ISeasonChallenge>(
 //TODO: check whether this is complete
 const playerSkillsSchema = new Schema<IPlayerSkills>(
     {
-        LPP_SPACE: Number,
-        LPP_DRIFTER: Number,
-        LPS_NONE: Number,
-        LPS_PILOTING: Number,
-        LPS_GUNNERY: Number,
-        LPS_TACTICAL: Number,
-        LPS_ENGINEERING: Number,
-        LPS_COMMAND: Number,
-        LPS_DRIFT_COMBAT: Number,
-        LPS_DRIFT_RIDING: Number,
-        LPS_DRIFT_OPPORTUNITY: Number,
-        LPS_DRIFT_ENDURANCE: Number
+        LPP_SPACE: { type: Number, default: 0 },
+        LPS_PILOTING: { type: Number, default: 0 },
+        LPS_GUNNERY: { type: Number, default: 0 },
+        LPS_TACTICAL: { type: Number, default: 0 },
+        LPS_ENGINEERING: { type: Number, default: 0 },
+        LPS_COMMAND: { type: Number, default: 0 },
+        LPP_DRIFTER: { type: Number, default: 0 },
+        LPS_DRIFT_COMBAT: { type: Number, default: 0 },
+        LPS_DRIFT_RIDING: { type: Number, default: 0 },
+        LPS_DRIFT_OPPORTUNITY: { type: Number, default: 0 },
+        LPS_DRIFT_ENDURANCE: { type: Number, default: 0 }
     },
     { _id: false }
 );
@@ -449,24 +462,55 @@ const settingsSchema = new Schema<ISettings>({
     TradingRulesConfirmed: Boolean
 });
 
-const consumedSchuitsSchema = new Schema<IConsumedSuit>({
-    s: String,
-    c: colorSchema
-});
+const consumedSchuitsSchema = new Schema<IConsumedSuit>(
+    {
+        s: String,
+        c: colorSchema
+    },
+    { _id: false }
+);
+
+const helminthFoodRecordSchema = new Schema<IHelminthFoodRecord>(
+    {
+        ItemType: String,
+        Date: Number
+    },
+    { _id: false }
+);
+
+const helminthResourceSchema = new Schema<IHelminthResource>(
+    {
+        ItemType: String,
+        Count: Number,
+        RecentlyConvertedResources: { type: [helminthFoodRecordSchema], default: undefined }
+    },
+    { _id: false }
+);
 
 const infestedFoundrySchema = new Schema<IInfestedFoundry>(
     {
         Name: String,
-        Resources: { type: [typeCountSchema], default: undefined },
+        Resources: { type: [helminthResourceSchema], default: undefined },
         Slots: Number,
         XP: Number,
         ConsumedSuits: { type: [consumedSchuitsSchema], default: undefined },
         InvigorationIndex: Number,
         InvigorationSuitOfferings: { type: [String], default: undefined },
-        InvigorationsApplied: Number
+        InvigorationsApplied: Number,
+        LastConsumedSuit: { type: EquipmentSchema, default: undefined },
+        AbilityOverrideUnlockCooldown: Date
     },
     { _id: false }
 );
+
+infestedFoundrySchema.set("toJSON", {
+    transform(_doc, ret, _options) {
+        if (ret.AbilityOverrideUnlockCooldown) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+            ret.AbilityOverrideUnlockCooldown = toMongoDate(ret.AbilityOverrideUnlockCooldown);
+        }
+    }
+});
 
 const questProgressSchema = new Schema<IQuestProgress>({
     c: Number,
@@ -503,13 +547,14 @@ const fusionTreasuresSchema = new Schema<IFusionTreasure>().add(typeCountSchema)
 
 const spectreLoadoutsSchema = new Schema<ISpectreLoadout>(
     {
-        LongGuns: String,
-        Melee: String,
-        Pistols: String,
-        PistolsFeatures: Number,
-        PistolsModularParts: [String],
+        ItemType: String,
         Suits: String,
-        ItemType: String
+        LongGuns: String,
+        LongGunsModularParts: { type: [String], default: undefined },
+        Pistols: String,
+        PistolsModularParts: { type: [String], default: undefined },
+        Melee: String,
+        MeleeModularParts: { type: [String], default: undefined }
     },
     { _id: false }
 );
@@ -578,6 +623,93 @@ const evolutionProgressSchema = new Schema<IEvolutionProgress>(
     { _id: false }
 );
 
+const endlessXpProgressSchema = new Schema<IEndlessXpProgress>(
+    {
+        Category: String,
+        Choices: [String]
+    },
+    { _id: false }
+);
+
+const crewShipPilotWeaponSchema = new Schema<ICrewShipPilotWeapon>(
+    {
+        PRIMARY_A: EquipmentSelectionSchema,
+        SECONDARY_A: EquipmentSelectionSchema
+    },
+    { _id: false }
+);
+
+const crewShipPortGunsSchema = new Schema<ICrewShipPortGuns>(
+    {
+        PRIMARY_A: EquipmentSelectionSchema
+    },
+    { _id: false }
+);
+
+const crewShipWeaponSchema = new Schema<ICrewShipWeapon>(
+    {
+        PILOT: crewShipPilotWeaponSchema,
+        PORT_GUNS: crewShipPortGunsSchema
+    },
+    { _id: false }
+);
+
+const shipExteriorSchema = new Schema<IShipExterior>(
+    {
+        SkinFlavourItem: String,
+        Colors: colorSchema,
+        ShipAttachments: { HOOD_ORNAMENT: String }
+    },
+    { _id: false }
+);
+
+const crewShipCustomizationSchema = new Schema<ICrewShipCustomization>(
+    {
+        CrewshipInterior: shipExteriorSchema
+    },
+    { _id: false }
+);
+
+const crewShipMembersSchema = new Schema<ICrewShipMembers>(
+    {
+        SLOT_A: Schema.Types.ObjectId,
+        SLOT_B: Schema.Types.ObjectId,
+        SLOT_C: Schema.Types.ObjectId
+    },
+    { _id: false }
+);
+crewShipMembersSchema.set("toJSON", {
+    virtuals: true,
+    transform(_doc, ret) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        ret.SLOT_A = { ItemId: toOid(ret.SLOT_A) };
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        ret.SLOT_B = { ItemId: toOid(ret.SLOT_B) };
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        ret.SLOT_C = { ItemId: toOid(ret.SLOT_C) };
+    }
+});
+
+const crewShipSchema = new Schema<ICrewShip>({
+    ItemType: { type: String, required: true },
+    Configs: { type: [ItemConfigSchema], default: [] },
+    Weapon: { type: crewShipWeaponSchema, default: undefined },
+    Customization: { type: crewShipCustomizationSchema, default: undefined },
+    ItemName: { type: String, default: "" },
+    RailjackImage: { type: FlavourItemSchema, default: undefined },
+    CrewMembers: { type: crewShipMembersSchema, default: undefined }
+});
+crewShipSchema.virtual("ItemId").get(function () {
+    return { $oid: this._id.toString() };
+});
+crewShipSchema.set("toJSON", {
+    virtuals: true,
+    transform(_doc, ret, _options) {
+        delete ret._id;
+        delete ret.__v;
+    }
+});
+
 const inventorySchema = new Schema<IInventoryDatabase, InventoryDocumentProps>(
     {
         accountOwnerId: Schema.Types.ObjectId,
@@ -586,13 +718,15 @@ const inventorySchema = new Schema<IInventoryDatabase, InventoryDocumentProps>(
         RewardSeed: Number,
 
         //Credit
-        RegularCredits: Number,
+        RegularCredits: { type: Number, default: 3000 },
         //Platinum
-        PremiumCredits: Number,
+        PremiumCredits: { type: Number, default: 50 },
         //Gift Platinum(Non trade)
-        PremiumCreditsFree: Number,
+        PremiumCreditsFree: { type: Number, default: 50 },
         //Endo
-        FusionPoints: Number,
+        FusionPoints: { type: Number, default: 0 },
+        //Regal Aya
+        PrimeTokens: { type: Number, default: 0 },
 
         //Slots
         SuitBin: slotsBinSchema,
@@ -609,9 +743,9 @@ const inventorySchema = new Schema<IInventoryDatabase, InventoryDocumentProps>(
         CrewMemberBin: slotsBinSchema,
 
         //How many trades do you have left
-        TradesRemaining: Number,
+        TradesRemaining: { type: Number, default: 0 },
         //How many Gift do you have left*(gift spends the trade)
-        GiftsRemaining: Number,
+        GiftsRemaining: { type: Number, default: 8 },
         //Curent trade info Giving or Getting items
         PendingTrades: [Schema.Types.Mixed],
 
@@ -622,22 +756,23 @@ const inventorySchema = new Schema<IInventoryDatabase, InventoryDocumentProps>(
         //Syndicates Missions complate(Navigation->Syndicate)
         CompletedSyndicates: [String],
         //Daily Syndicates Exp
-        DailyAffiliation: Number,
-        DailyAffiliationPvp: Number,
-        DailyAffiliationLibrary: Number,
-        DailyAffiliationCetus: Number,
-        DailyAffiliationQuills: Number,
-        DailyAffiliationSolaris: Number,
-        DailyAffiliationVentkids: Number,
-        DailyAffiliationVox: Number,
-        DailyAffiliationEntrati: Number,
-        DailyAffiliationNecraloid: Number,
-        DailyAffiliationZariman: Number,
-        DailyAffiliationKahl: Number,
-        DailyAffiliationCavia: Number,
+        DailyAffiliation: { type: Number, default: 0 },
+        DailyAffiliationPvp: { type: Number, default: 0 },
+        DailyAffiliationLibrary: { type: Number, default: 0 },
+        DailyAffiliationCetus: { type: Number, default: 0 },
+        DailyAffiliationQuills: { type: Number, default: 0 },
+        DailyAffiliationSolaris: { type: Number, default: 0 },
+        DailyAffiliationVentkids: { type: Number, default: 0 },
+        DailyAffiliationVox: { type: Number, default: 0 },
+        DailyAffiliationEntrati: { type: Number, default: 0 },
+        DailyAffiliationNecraloid: { type: Number, default: 0 },
+        DailyAffiliationZariman: { type: Number, default: 0 },
+        DailyAffiliationKahl: { type: Number, default: 0 },
+        DailyAffiliationCavia: { type: Number, default: 0 },
+        DailyAffiliationHex: { type: Number, default: 0 },
 
         //Daily Focus limit
-        DailyFocus: Number,
+        DailyFocus: { type: Number, default: 250000 },
         //Focus XP per School
         FocusXP: focusXPSchema,
         //Curent active like Active school focuses is = "Zenurik"
@@ -726,7 +861,7 @@ const inventorySchema = new Schema<IInventoryDatabase, InventoryDocumentProps>(
         CrewShipRawSalvage: [Schema.Types.Mixed],
 
         //Default RailJack
-        CrewShips: [Schema.Types.Mixed],
+        CrewShips: [crewShipSchema],
         CrewShipAmmo: [typeCountSchema],
         CrewShipWeapons: [Schema.Types.Mixed],
         CrewShipWeaponSkins: [Schema.Types.Mixed],
@@ -751,7 +886,7 @@ const inventorySchema = new Schema<IInventoryDatabase, InventoryDocumentProps>(
         Scoops: [EquipmentSchema],
 
         //Mastery Rank*(Need item XPInfo to rank up)
-        PlayerLevel: Number,
+        PlayerLevel: { type: Number, default: 0 },
         //Item Mastery Rank exp
         XPInfo: [TypeXPItemSchema],
         //Mastery Rank next availability
@@ -801,11 +936,9 @@ const inventorySchema = new Schema<IInventoryDatabase, InventoryDocumentProps>(
         QualifyingInvasions: [Schema.Types.Mixed],
         FactionScores: [Number],
 
-        //Have only Suit+Pistols+LongGuns+Melee+ItemType(BronzeSpectre,GoldSpectre,PlatinumSpectreArmy,SilverSpectreArmy)
-        //"/Lotus/Types/Game/SpectreArmies/BronzeSpectreArmy": "Vapor Specter Regiment",
-        SpectreLoadouts: [spectreLoadoutsSchema],
-        //If you want change Spectre Gear id
-        PendingSpectreLoadouts: [Schema.Types.Mixed],
+        // https://warframe.fandom.com/wiki/Specter_(Tenno)
+        PendingSpectreLoadouts: { type: [spectreLoadoutsSchema], default: undefined },
+        SpectreLoadouts: { type: [spectreLoadoutsSchema], default: undefined },
 
         //New Quest Email
         EmailItems: [TypeXPItemSchema],
@@ -867,6 +1000,8 @@ const inventorySchema = new Schema<IInventoryDatabase, InventoryDocumentProps>(
         //https://warframe.fandom.com/wiki/Parazon
         DataKnives: [EquipmentSchema],
 
+        Motorcycles: [EquipmentSchema],
+
         //CorpusLich or GrineerLich
         NemesisAbandonedRewards: [String],
         //CorpusLich\KuvaLich
@@ -882,7 +1017,7 @@ const inventorySchema = new Schema<IInventoryDatabase, InventoryDocumentProps>(
 
         //Modulars lvl and exp(Railjack|Duviri)
         //https://warframe.fandom.com/wiki/Intrinsics
-        PlayerSkills: playerSkillsSchema,
+        PlayerSkills: { type: playerSkillsSchema, default: {} },
 
         //TradeBannedUntil data
         TradeBannedUntil: Schema.Types.Mixed,
@@ -923,7 +1058,7 @@ const inventorySchema = new Schema<IInventoryDatabase, InventoryDocumentProps>(
         Robotics: [Schema.Types.Mixed],
         UsedDailyDeals: [Schema.Types.Mixed],
         CollectibleSeries: [Schema.Types.Mixed],
-        HasResetAccount: Boolean,
+        HasResetAccount: { type: Boolean, default: false },
 
         //Discount Coupon
         PendingCoupon: Schema.Types.Mixed,
@@ -932,7 +1067,9 @@ const inventorySchema = new Schema<IInventoryDatabase, InventoryDocumentProps>(
         //Zanuka
         Harvestable: Boolean,
         //Grustag three
-        DeathSquadable: Boolean
+        DeathSquadable: Boolean,
+
+        EndlessXP: { type: [endlessXpProgressSchema], default: undefined }
     },
     { timestamps: { createdAt: "Created" } }
 );
@@ -941,6 +1078,7 @@ inventorySchema.set("toJSON", {
     transform(_document, returnedObject) {
         delete returnedObject._id;
         delete returnedObject.__v;
+        delete returnedObject.accountOwnerId;
 
         const inventoryDatabase = returnedObject as IInventoryDatabase;
         const inventoryResponse = returnedObject as IInventoryResponse;
@@ -974,6 +1112,7 @@ type InventoryDocumentProps = {
     MechSuits: Types.DocumentArray<IEquipmentDatabase>;
     Scoops: Types.DocumentArray<IEquipmentDatabase>;
     DataKnives: Types.DocumentArray<IEquipmentDatabase>;
+    Motorcycles: Types.DocumentArray<IEquipmentDatabase>;
     DrifterMelee: Types.DocumentArray<IEquipmentDatabase>;
     Sentinels: Types.DocumentArray<IEquipmentDatabase>;
     Horses: Types.DocumentArray<IEquipmentDatabase>;
@@ -985,9 +1124,23 @@ type InventoryDocumentProps = {
     Hoverboards: Types.DocumentArray<IEquipmentDatabase>;
     MoaPets: Types.DocumentArray<IEquipmentDatabase>;
     WeaponSkins: Types.DocumentArray<IWeaponSkinDatabase>;
+    CrewShips: Types.DocumentArray<ICrewShip>;
+    CrewShipHarnesses: Types.DocumentArray<IEquipmentDatabase>;
 };
 
 // eslint-disable-next-line @typescript-eslint/ban-types
 type InventoryModelType = Model<IInventoryDatabase, {}, InventoryDocumentProps>;
 
 export const Inventory = model<IInventoryDatabase, InventoryModelType>("Inventory", inventorySchema);
+
+// eslint-disable-next-line @typescript-eslint/ban-types
+export type TInventoryDatabaseDocument = Document<unknown, {}, IInventoryDatabase> &
+    Omit<
+        IInventoryDatabase & {
+            _id: Types.ObjectId;
+        } & {
+            __v: number;
+        },
+        keyof InventoryDocumentProps
+    > &
+    InventoryDocumentProps;

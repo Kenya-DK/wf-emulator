@@ -1,45 +1,84 @@
 import { RequestHandler } from "express";
-import { getAccountIdForRequest } from "@/src/services/loginService";
-import { toInventoryResponse } from "@/src/helpers/inventoryHelpers";
+import { getAccountForRequest } from "@/src/services/loginService";
 import { Inventory } from "@/src/models/inventoryModels/inventoryModel";
 import { config } from "@/src/services/configService";
 import allDialogue from "@/static/fixed_responses/allDialogue.json";
-import allMissions from "@/static/fixed_responses/allMissions.json";
 import { ILoadoutDatabase } from "@/src/types/saveLoadoutTypes";
-import { IInventoryDatabase, IShipInventory, equipmentKeys } from "@/src/types/inventoryTypes/inventoryTypes";
+import { IInventoryResponse, IShipInventory, equipmentKeys } from "@/src/types/inventoryTypes/inventoryTypes";
 import { IPolarity, ArtifactPolarity } from "@/src/types/inventoryTypes/commonInventoryTypes";
-import { ExportCustoms, ExportFlavour, ExportKeys, ExportResources } from "warframe-public-export-plus";
+import {
+    ExportCustoms,
+    ExportFlavour,
+    ExportKeys,
+    ExportRegions,
+    ExportResources,
+    ExportVirtuals
+} from "warframe-public-export-plus";
+import { handleSubsumeCompletion } from "./infestedFoundryController";
 
-// eslint-disable-next-line @typescript-eslint/no-misused-promises
-const inventoryController: RequestHandler = async (request, response) => {
-    let accountId;
-    try {
-        accountId = await getAccountIdForRequest(request);
-    } catch (e) {
-        response.status(400).send("Log-in expired");
-        return;
-    }
+export const inventoryController: RequestHandler = async (request, response) => {
+    const account = await getAccountForRequest(request);
 
-    const inventory = await Inventory.findOne({ accountOwnerId: accountId })
-        .populate<{ LoadOutPresets: ILoadoutDatabase }>("LoadOutPresets")
-        .populate<{ Ships: IShipInventory }>("Ships", "-ShipInteriorColors");
+    const inventory = await Inventory.findOne({ accountOwnerId: account._id.toString() });
 
     if (!inventory) {
         response.status(400).json({ error: "inventory was undefined" });
         return;
     }
 
-    //TODO: make a function that converts from database representation to client
-    const inventoryJSON: IInventoryDatabase = inventory.toJSON();
-    console.log(inventoryJSON.Ships);
+    // Handle daily reset
+    const today: number = Math.trunc(new Date().getTime() / 86400000);
+    if (account.LastLoginDay != today) {
+        account.LastLoginDay = today;
+        await account.save();
 
-    const inventoryResponse = toInventoryResponse(inventoryJSON);
+        inventory.DailyAffiliation = 16000 + inventory.PlayerLevel * 500;
+        inventory.DailyAffiliationPvp = 16000 + inventory.PlayerLevel * 500;
+        inventory.DailyAffiliationLibrary = 16000 + inventory.PlayerLevel * 500;
+        inventory.DailyAffiliationCetus = 16000 + inventory.PlayerLevel * 500;
+        inventory.DailyAffiliationQuills = 16000 + inventory.PlayerLevel * 500;
+        inventory.DailyAffiliationSolaris = 16000 + inventory.PlayerLevel * 500;
+        inventory.DailyAffiliationVentkids = 16000 + inventory.PlayerLevel * 500;
+        inventory.DailyAffiliationVox = 16000 + inventory.PlayerLevel * 500;
+        inventory.DailyAffiliationEntrati = 16000 + inventory.PlayerLevel * 500;
+        inventory.DailyAffiliationNecraloid = 16000 + inventory.PlayerLevel * 500;
+        inventory.DailyAffiliationZariman = 16000 + inventory.PlayerLevel * 500;
+        inventory.DailyAffiliationKahl = 16000 + inventory.PlayerLevel * 500;
+        inventory.DailyAffiliationCavia = 16000 + inventory.PlayerLevel * 500;
+        inventory.DailyAffiliationHex = 16000 + inventory.PlayerLevel * 500;
+        inventory.DailyFocus = 250000 + inventory.PlayerLevel * 5000;
+        await inventory.save();
+    }
 
-    if (config.infiniteResources) {
+    if (
+        inventory.InfestedFoundry &&
+        inventory.InfestedFoundry.AbilityOverrideUnlockCooldown &&
+        new Date() >= inventory.InfestedFoundry.AbilityOverrideUnlockCooldown
+    ) {
+        handleSubsumeCompletion(inventory);
+        await inventory.save();
+    }
+
+    const inventoryWithLoadOutPresets = await inventory.populate<{ LoadOutPresets: ILoadoutDatabase }>(
+        "LoadOutPresets"
+    );
+    const inventoryWithLoadOutPresetsAndShips = await inventoryWithLoadOutPresets.populate<{ Ships: IShipInventory }>(
+        "Ships"
+    );
+    const inventoryResponse = inventoryWithLoadOutPresetsAndShips.toJSON<IInventoryResponse>();
+
+    if (config.infiniteCredits) {
         inventoryResponse.RegularCredits = 999999999;
-        inventoryResponse.TradesRemaining = 999999999;
+    }
+    if (config.infinitePlatinum) {
         inventoryResponse.PremiumCreditsFree = 999999999;
         inventoryResponse.PremiumCredits = 999999999;
+    }
+    if (config.infiniteEndo) {
+        inventoryResponse.FusionPoints = 999999999;
+    }
+    if (config.infiniteRegalAya) {
+        inventoryResponse.PrimeTokens = 999999999;
     }
 
     if (config.skipAllDialogue) {
@@ -55,7 +94,14 @@ const inventoryController: RequestHandler = async (request, response) => {
     }
 
     if (config.unlockAllMissions) {
-        inventoryResponse.Missions = allMissions;
+        inventoryResponse.Missions = [];
+        for (const tag of Object.keys(ExportRegions)) {
+            inventoryResponse.Missions.push({
+                Completes: 1,
+                Tier: 1,
+                Tag: tag
+            });
+        }
         addString(inventoryResponse.NodeIntrosCompleted, "TeshinHardModeUnlocked");
     }
 
@@ -70,15 +116,22 @@ const inventoryController: RequestHandler = async (request, response) => {
     }
     if (config.completeAllQuests) {
         for (const quest of inventoryResponse.QuestKeys) {
+            quest.unlock = true;
             quest.Completed = true;
-            quest.Progress = [
-                {
+
+            let numStages = 1;
+            if (quest.ItemType in ExportKeys && "chainStages" in ExportKeys[quest.ItemType]) {
+                numStages = ExportKeys[quest.ItemType].chainStages!.length;
+            }
+            quest.Progress = [];
+            for (let i = 0; i != numStages; ++i) {
+                quest.Progress.push({
                     c: 0,
                     i: false,
                     m: false,
                     b: []
-                }
-            ];
+                });
+            }
         }
 
         inventoryResponse.ArchwingEnabled = true;
@@ -105,13 +158,26 @@ const inventoryController: RequestHandler = async (request, response) => {
 
     if (config.unlockAllSkins) {
         inventoryResponse.WeaponSkins = [];
+        let i = 0;
         for (const uniqueName in ExportCustoms) {
+            i++;
             inventoryResponse.WeaponSkins.push({
                 ItemId: {
-                    $oid: "000000000000000000000000"
+                    $oid: i.toString().padStart(24, "0")
                 },
                 ItemType: uniqueName
             });
+        }
+    }
+
+    if (config.unlockAllCapturaScenes) {
+        for (const uniqueName of Object.keys(ExportResources)) {
+            if (resourceInheritsFrom(uniqueName, "/Lotus/Types/Items/MiscItems/PhotoboothTile")) {
+                inventoryResponse.MiscItems.push({
+                    ItemType: uniqueName,
+                    ItemCount: 1
+                });
+            }
         }
     }
 
@@ -150,6 +216,9 @@ const inventoryController: RequestHandler = async (request, response) => {
     // Fix for #380
     inventoryResponse.NextRefill = { $date: { $numberLong: "9999999999999" } };
 
+    // This determines if the "void fissures" tab is shown in navigation.
+    inventoryResponse.HasOwnedVoidProjectionsPreviously = true;
+
     response.json(inventoryResponse);
 };
 
@@ -166,4 +235,19 @@ const getExpRequiredForMr = (rank: number): number => {
     return 2_250_000 + 147_500 * (rank - 30);
 };
 
-export { inventoryController };
+const resourceInheritsFrom = (resourceName: string, targetName: string): boolean => {
+    let parentName = resourceGetParent(resourceName);
+    for (; parentName != undefined; parentName = resourceGetParent(parentName)) {
+        if (parentName == targetName) {
+            return true;
+        }
+    }
+    return false;
+};
+
+const resourceGetParent = (resourceName: string): string | undefined => {
+    if (resourceName in ExportResources) {
+        return ExportResources[resourceName].parentName;
+    }
+    return ExportVirtuals[resourceName]?.parentName;
+};

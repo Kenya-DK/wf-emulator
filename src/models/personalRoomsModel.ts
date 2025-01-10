@@ -1,14 +1,43 @@
 import { toOid } from "@/src/helpers/inventoryHelpers";
-import { IOrbiter, IPersonalRooms, PersonalRoomsModelType } from "@/src/types/personalRoomsTypes";
-import { IApartment, IGardening, IPlacedDecosDatabase } from "@/src/types/shipTypes";
+import { colorSchema } from "@/src/models/inventoryModels/inventoryModel";
+import { IOrbiter, IPersonalRoomsDatabase, PersonalRoomsModelType } from "@/src/types/personalRoomsTypes";
+import {
+    IApartment,
+    IFavouriteLoadoutDatabase,
+    IGardening,
+    IPlacedDecosDatabase,
+    IPictureFrameInfo,
+    IRoom,
+    ITailorShopDatabase
+} from "@/src/types/shipTypes";
 import { Schema, model } from "mongoose";
+
+const pictureFrameInfoSchema = new Schema<IPictureFrameInfo>(
+    {
+        Image: String,
+        Filter: String,
+        XOffset: Number,
+        YOffset: Number,
+        Scale: Number,
+        InvertX: Boolean,
+        InvertY: Boolean,
+        ColorCorrection: Number,
+        Text: String,
+        TextScale: Number,
+        TextColorA: Number,
+        TextColorB: Number,
+        TextOrientation: Number
+    },
+    { id: false, _id: false }
+);
 
 const placedDecosSchema = new Schema<IPlacedDecosDatabase>(
     {
         Type: String,
         Pos: [Number],
         Rot: [Number],
-        Scale: Number
+        Scale: Number,
+        PictureFrameInfo: { type: pictureFrameInfoSchema, default: undefined }
     },
     { id: false }
 );
@@ -24,11 +53,11 @@ placedDecosSchema.set("toJSON", {
     }
 });
 
-const roomSchema = new Schema(
+const roomSchema = new Schema<IRoom>(
     {
         Name: String,
         MaxCapacity: Number,
-        PlacedDecos: [placedDecosSchema]
+        PlacedDecos: { type: [placedDecosSchema], default: undefined }
     },
     { _id: false }
 );
@@ -56,11 +85,60 @@ const orbiterSchema = new Schema<IOrbiter>(
     { _id: false }
 );
 
-export const personalRoomsSchema = new Schema<IPersonalRooms>({
-    personalRoomsOwnerId: Schema.Types.ObjectId,
-    activeShipId: Schema.Types.ObjectId,
-    Ship: orbiterSchema,
-    Apartment: apartmentSchema
+const favouriteLoadoutSchema = new Schema<IFavouriteLoadoutDatabase>(
+    {
+        Tag: String,
+        LoadoutId: Schema.Types.ObjectId
+    },
+    { _id: false }
+);
+favouriteLoadoutSchema.set("toJSON", {
+    virtuals: true,
+    transform(_document, returnedObject) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        returnedObject.LoadoutId = toOid(returnedObject.LoadoutId);
+    }
 });
 
-export const PersonalRooms = model<IPersonalRooms, PersonalRoomsModelType>("PersonalRooms", personalRoomsSchema);
+const tailorShopSchema = new Schema<ITailorShopDatabase>(
+    {
+        FavouriteLoadouts: [favouriteLoadoutSchema],
+        CustomJson: String,
+        LevelDecosVisible: Boolean,
+        Rooms: [roomSchema]
+    },
+    { _id: false }
+);
+const tailorShopDefault: ITailorShopDatabase = {
+    FavouriteLoadouts: [],
+    CustomJson: "{}",
+    LevelDecosVisible: true,
+    Rooms: [
+        {
+            Name: "LabRoom",
+            MaxCapacity: 4000
+        },
+        {
+            Name: "LivingQuartersRoom",
+            MaxCapacity: 3000
+        },
+        {
+            Name: "HelminthRoom",
+            MaxCapacity: 2000
+        }
+    ]
+};
+
+export const personalRoomsSchema = new Schema<IPersonalRoomsDatabase>({
+    personalRoomsOwnerId: Schema.Types.ObjectId,
+    activeShipId: Schema.Types.ObjectId,
+    ShipInteriorColors: colorSchema,
+    Ship: orbiterSchema,
+    Apartment: apartmentSchema,
+    TailorShop: { type: tailorShopSchema, default: tailorShopDefault }
+});
+
+export const PersonalRooms = model<IPersonalRoomsDatabase, PersonalRoomsModelType>(
+    "PersonalRooms",
+    personalRoomsSchema
+);

@@ -1,19 +1,41 @@
 import { RequestHandler } from "express";
 import { getAccountIdForRequest } from "@/src/services/loginService";
 import { getInventory, addMiscItems, addEquipment } from "@/src/services/inventoryService";
-import { IMiscItem, TFocusPolarity } from "@/src/types/inventoryTypes/inventoryTypes";
+import { IMiscItem, TFocusPolarity, TEquipmentKey } from "@/src/types/inventoryTypes/inventoryTypes";
 import { logger } from "@/src/utils/logger";
 import { ExportFocusUpgrades } from "warframe-public-export-plus";
+import { IEquipmentClient } from "@/src/types/inventoryTypes/commonInventoryTypes";
 
-// eslint-disable-next-line @typescript-eslint/no-misused-promises
 export const focusController: RequestHandler = async (req, res) => {
     const accountId = await getAccountIdForRequest(req);
     switch (req.query.op) {
         default:
-            logger.error("Unhandled focus op type: " + req.query.op);
-            logger.debug(req.body.toString());
+            logger.error("Unhandled focus op type: " + String(req.query.op));
+            logger.debug(String(req.body));
             res.end();
             break;
+        case FocusOperation.InstallLens: {
+            const request = JSON.parse(String(req.body)) as ILensInstallRequest;
+            const inventory = await getInventory(accountId);
+            for (const item of inventory[request.Category]) {
+                if (item._id.toString() == request.WeaponId) {
+                    item.FocusLens = request.LensType;
+                    addMiscItems(inventory, [
+                        {
+                            ItemType: request.LensType,
+                            ItemCount: -1
+                        } satisfies IMiscItem
+                    ]);
+                    break;
+                }
+            }
+            await inventory.save();
+            res.json({
+                weaponId: request.WeaponId,
+                lensType: request.LensType
+            });
+            break;
+        }
         case FocusOperation.UnlockWay: {
             const focusType = (JSON.parse(String(req.body)) as IWayRequest).FocusType;
             const focusPolarity = focusTypeToPolarity(focusType);
@@ -81,8 +103,10 @@ export const focusController: RequestHandler = async (req, res) => {
                 "/Lotus/Weapons/Sentients/OperatorAmplifiers/SentTrainingAmplifier/SentAmpTrainingChassis",
                 "/Lotus/Weapons/Sentients/OperatorAmplifiers/SentTrainingAmplifier/SentAmpTrainingBarrel"
             ];
-            const result = await addEquipment("OperatorAmps", request.StartingWeaponType, accountId, parts);
-            res.json(result);
+            const inventory = await getInventory(accountId);
+            const inventoryChanges = addEquipment(inventory, "OperatorAmps", request.StartingWeaponType, parts);
+            await inventory.save();
+            res.json((inventoryChanges.OperatorAmps as IEquipmentClient[])[0]);
             break;
         }
         case FocusOperation.UnbindUpgrade: {
@@ -144,6 +168,7 @@ export const focusController: RequestHandler = async (req, res) => {
 };
 
 enum FocusOperation {
+    InstallLens = "1",
     UnlockWay = "2",
     UnlockUpgrade = "3",
     LevelUpUpgrade = "4",
@@ -184,6 +209,12 @@ interface IConvertShardRequest {
 
 interface ISentTrainingAmplifierRequest {
     StartingWeaponType: string;
+}
+
+interface ILensInstallRequest {
+    LensType: string;
+    Category: TEquipmentKey;
+    WeaponId: string;
 }
 
 // Works for ways & upgrades

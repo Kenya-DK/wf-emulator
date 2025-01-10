@@ -5,7 +5,11 @@ import { TEquipmentKey } from "@/src/types/inventoryTypes/inventoryTypes";
 import { getInventory, updateCurrency, addEquipment, addMiscItems } from "@/src/services/inventoryService";
 
 const modularWeaponTypes: Record<string, TEquipmentKey> = {
+    "/Lotus/Weapons/SolarisUnited/Primary/LotusModularPrimary": "LongGuns",
     "/Lotus/Weapons/SolarisUnited/Primary/LotusModularPrimaryBeam": "LongGuns",
+    "/Lotus/Weapons/SolarisUnited/Primary/LotusModularPrimaryLauncher": "LongGuns",
+    "/Lotus/Weapons/SolarisUnited/Primary/LotusModularPrimaryShotgun": "LongGuns",
+    "/Lotus/Weapons/SolarisUnited/Primary/LotusModularPrimarySniper": "LongGuns",
     "/Lotus/Weapons/SolarisUnited/Secondary/LotusModularSecondary": "Pistols",
     "/Lotus/Weapons/SolarisUnited/Secondary/LotusModularSecondaryBeam": "Pistols",
     "/Lotus/Weapons/SolarisUnited/Secondary/LotusModularSecondaryShotgun": "Pistols",
@@ -23,7 +27,6 @@ interface IModularCraftRequest {
     Parts: string[];
 }
 
-// eslint-disable-next-line @typescript-eslint/no-misused-promises
 export const modularWeaponCraftingController: RequestHandler = async (req, res) => {
     const accountId = await getAccountIdForRequest(req);
     const data = getJSONfromString(String(req.body)) as IModularCraftRequest;
@@ -31,18 +34,12 @@ export const modularWeaponCraftingController: RequestHandler = async (req, res) 
         throw new Error(`unknown modular weapon type: ${data.WeaponType}`);
     }
     const category = modularWeaponTypes[data.WeaponType];
+    const inventory = await getInventory(accountId);
 
     // Give weapon
-    const weapon = await addEquipment(category, data.WeaponType, accountId, data.Parts);
+    const weapon = addEquipment(inventory, category, data.WeaponType, data.Parts);
 
-    // Remove credits
-    const currencyChanges = await updateCurrency(
-        category == "Hoverboards" || category == "MoaPets" ? 5000 : 4000,
-        false,
-        accountId
-    );
-
-    // Remove parts
+    // Remove credits & parts
     const miscItemChanges = [];
     for (const part of data.Parts) {
         miscItemChanges.push({
@@ -50,7 +47,11 @@ export const modularWeaponCraftingController: RequestHandler = async (req, res) 
             ItemCount: -1
         });
     }
-    const inventory = await getInventory(accountId);
+    const currencyChanges = updateCurrency(
+        inventory,
+        category == "Hoverboards" || category == "MoaPets" ? 5000 : 4000,
+        false
+    );
     addMiscItems(inventory, miscItemChanges);
     await inventory.save();
 

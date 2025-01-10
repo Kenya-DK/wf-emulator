@@ -1,5 +1,5 @@
 import { getAccountIdForRequest } from "@/src/services/loginService";
-import { updateCurrency } from "@/src/services/inventoryService";
+import { getInventory, updateCurrency } from "@/src/services/inventoryService";
 import { RequestHandler } from "express";
 import { updateSlots } from "@/src/services/inventoryService";
 import { InventorySlot } from "@/src/types/inventoryTypes/inventoryTypes";
@@ -18,7 +18,6 @@ import { InventorySlot } from "@/src/types/inventoryTypes/inventoryTypes";
     number of frames = extra - slots + 2
 */
 
-// eslint-disable-next-line @typescript-eslint/no-misused-promises
 export const inventorySlotsController: RequestHandler = async (req, res) => {
     const accountId = await getAccountIdForRequest(req);
     //const body = JSON.parse(req.body as string) as IInventorySlotsRequest;
@@ -27,8 +26,10 @@ export const inventorySlotsController: RequestHandler = async (req, res) => {
 
     //TODO: check which slot was purchased because pvpBonus is also possible
 
-    const currencyChanges = await updateCurrency(20, true, accountId);
-    await updateSlots(accountId, InventorySlot.PVE_LOADOUTS, 1, 1);
+    const inventory = await getInventory(accountId);
+    const currencyChanges = updateCurrency(inventory, 20, true);
+    updateSlots(inventory, InventorySlot.PVE_LOADOUTS, 1, 1);
+    await inventory.save();
 
     //console.log({ InventoryChanges: currencyChanges }, " added loadout changes:");
 

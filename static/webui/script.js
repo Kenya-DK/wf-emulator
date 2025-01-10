@@ -61,6 +61,32 @@ function logout() {
     localStorage.removeItem("password");
 }
 
+function renameAccount() {
+    const newname = window.prompt("What would you like to change your account name to?");
+    if (newname) {
+        fetch("/custom/renameAccount?" + window.authz + "&newname=" + newname).then(() => {
+            $(".displayname").text(newname);
+        });
+    }
+}
+
+function deleteAccount() {
+    if (
+        window.confirm(
+            "Are you sure you want to delete your account " +
+                $(".displayname").text() +
+                " (" +
+                localStorage.getItem("email") +
+                ")? This action cannot be undone."
+        )
+    ) {
+        fetch("/custom/deleteAccount?" + window.authz).then(() => {
+            logout();
+            single.loadRoute("/webui/"); // Show login screen
+        });
+    }
+}
+
 if (localStorage.getItem("email") && localStorage.getItem("password")) {
     loginFromLocalStorage();
 }
@@ -84,52 +110,75 @@ single.on("route_load", function (event) {
     }
 });
 
-window.itemListPromise = new Promise(resolve => {
-    const req = $.get("/custom/getItemLists");
-    req.done(data => {
-        window.archonCrystalUpgrades = data.archonCrystalUpgrades;
+function setActiveLanguage(lang) {
+    window.lang = lang;
+    const lang_name = document.querySelector("[data-lang=" + lang + "]").textContent;
+    document.getElementById("active-lang-name").textContent = lang_name;
+    document.querySelector("[data-lang].active").classList.remove("active");
+    document.querySelector("[data-lang=" + lang + "]").classList.add("active");
+}
+setActiveLanguage(localStorage.getItem("lang") ?? "en");
 
-        const itemMap = {
-            // Generics for rivens
-            "/Lotus/Weapons/Tenno/Archwing/Primary/ArchGun": { name: "Archgun" },
-            "/Lotus/Weapons/Tenno/Melee/PlayerMeleeWeapon": { name: "Melee" },
-            "/Lotus/Weapons/Tenno/Pistol/LotusPistol": { name: "Pistol" },
-            "/Lotus/Weapons/Tenno/Rifle/LotusRifle": { name: "Rifle" },
-            "/Lotus/Weapons/Tenno/Shotgun/LotusShotgun": { name: "Shotgun" },
-            // Modular weapons
-            "/Lotus/Weapons/SolarisUnited/Primary/LotusModularPrimaryBeam": { name: "Kitgun" },
-            "/Lotus/Weapons/SolarisUnited/Secondary/LotusModularSecondary": { name: "Kitgun" },
-            "/Lotus/Weapons/SolarisUnited/Secondary/LotusModularSecondaryBeam": { name: "Kitgun" },
-            "/Lotus/Weapons/SolarisUnited/Secondary/LotusModularSecondaryShotgun": { name: "Kitgun" },
-            "/Lotus/Weapons/Ostron/Melee/LotusModularWeapon": { name: "Zaw" },
-            // Missing in data sources
-            "/Lotus/Upgrades/CosmeticEnhancers/Peculiars/CyoteMod": { name: "Traumatic Peculiar" }
-        };
-        for (const [type, items] of Object.entries(data)) {
-            if (type == "archonCrystalUpgrades") {
-                Object.entries(items).forEach(([uniqueName, name]) => {
-                    const option = document.createElement("option");
-                    option.setAttribute("data-key", uniqueName);
-                    option.value = name;
-                    document.getElementById("datalist-" + type).appendChild(option);
-                });
-            } else if (type != "badItems") {
-                items.forEach(item => {
-                    if (item.uniqueName in data.badItems) {
-                        item.name += " (Imposter)";
-                    } else if (item.uniqueName.substr(0, 18) != "/Lotus/Types/Game/") {
+function setLanguage(lang) {
+    setActiveLanguage(lang);
+    localStorage.setItem("lang", lang);
+    fetchItemList();
+    updateInventory();
+}
+
+function fetchItemList() {
+    window.itemListPromise = new Promise(resolve => {
+        const req = $.get("/custom/getItemLists?lang=" + window.lang);
+        req.done(data => {
+            window.archonCrystalUpgrades = data.archonCrystalUpgrades;
+
+            const itemMap = {
+                // Generics for rivens
+                "/Lotus/Weapons/Tenno/Archwing/Primary/ArchGun": { name: "Archgun" },
+                "/Lotus/Weapons/Tenno/Melee/PlayerMeleeWeapon": { name: "Melee" },
+                "/Lotus/Weapons/Tenno/Pistol/LotusPistol": { name: "Pistol" },
+                "/Lotus/Weapons/Tenno/Rifle/LotusRifle": { name: "Rifle" },
+                "/Lotus/Weapons/Tenno/Shotgun/LotusShotgun": { name: "Shotgun" },
+                // Modular weapons
+                "/Lotus/Weapons/SolarisUnited/Primary/LotusModularPrimary": { name: "Kitgun" },
+                "/Lotus/Weapons/SolarisUnited/Primary/LotusModularPrimaryBeam": { name: "Kitgun" },
+                "/Lotus/Weapons/SolarisUnited/Primary/LotusModularPrimaryLauncher": { name: "Kitgun" },
+                "/Lotus/Weapons/SolarisUnited/Primary/LotusModularPrimaryShotgun": { name: "Kitgun" },
+                "/Lotus/Weapons/SolarisUnited/Primary/LotusModularPrimarySniper": { name: "Kitgun" },
+                "/Lotus/Weapons/SolarisUnited/Secondary/LotusModularSecondary": { name: "Kitgun" },
+                "/Lotus/Weapons/SolarisUnited/Secondary/LotusModularSecondaryBeam": { name: "Kitgun" },
+                "/Lotus/Weapons/SolarisUnited/Secondary/LotusModularSecondaryShotgun": { name: "Kitgun" },
+                "/Lotus/Weapons/Ostron/Melee/LotusModularWeapon": { name: "Zaw" },
+                // Missing in data sources
+                "/Lotus/Upgrades/CosmeticEnhancers/Peculiars/CyoteMod": { name: "Traumatic Peculiar" }
+            };
+            for (const [type, items] of Object.entries(data)) {
+                if (type == "archonCrystalUpgrades") {
+                    Object.entries(items).forEach(([uniqueName, name]) => {
                         const option = document.createElement("option");
-                        option.setAttribute("data-key", item.uniqueName);
-                        option.value = item.name;
+                        option.setAttribute("data-key", uniqueName);
+                        option.value = name;
                         document.getElementById("datalist-" + type).appendChild(option);
-                    }
-                    itemMap[item.uniqueName] = { ...item, type };
-                });
+                    });
+                } else if (type != "badItems") {
+                    items.forEach(item => {
+                        if (item.uniqueName in data.badItems) {
+                            item.name += " (Imposter)";
+                        } else if (item.uniqueName.substr(0, 18) != "/Lotus/Types/Game/") {
+                            const option = document.createElement("option");
+                            option.setAttribute("data-key", item.uniqueName);
+                            option.value = item.name;
+                            document.getElementById("datalist-" + type).appendChild(option);
+                        }
+                        itemMap[item.uniqueName] = { ...item, type };
+                    });
+                }
             }
-        }
-        resolve(itemMap);
+            resolve(itemMap);
+        });
     });
-});
+}
+fetchItemList();
 
 function updateInventory() {
     const req = $.get("/api/inventory.php?" + window.authz + "&xpBasedLevelCapDisabled=1");
@@ -158,6 +207,22 @@ function updateInventory() {
                         a.onclick = function (event) {
                             event.preventDefault();
                             addGearExp("Suits", item.ItemId.$oid, 1_600_000 - item.XP);
+                            if ("exalted" in itemMap[item.ItemType]) {
+                                for (const exaltedType of itemMap[item.ItemType].exalted) {
+                                    const exaltedItem = data.SpecialItems.find(x => x.ItemType == exaltedType);
+                                    if (exaltedItem) {
+                                        const exaltedCap =
+                                            itemMap[exaltedType]?.type == "weapons" ? 800_000 : 1_600_000;
+                                        if (exaltedItem.XP < exaltedCap) {
+                                            addGearExp(
+                                                "SpecialItems",
+                                                exaltedItem.ItemId.$oid,
+                                                exaltedCap - exaltedItem.XP
+                                            );
+                                        }
+                                    }
+                                }
+                            }
                         };
                         a.title = "Make Rank 30";
                         a.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--!Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M214.6 41.4c-12.5-12.5-32.8-12.5-45.3 0l-160 160c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L160 141.2V448c0 17.7 14.3 32 32 32s32-14.3 32-32V141.2L329.4 246.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-160-160z"/></svg>`;
@@ -517,7 +582,9 @@ function addGearExp(category, oid, xp) {
             contentType: "text/plain",
             data: JSON.stringify(data)
         }).done(function () {
-            updateInventory();
+            if (category != "SpecialItems") {
+                updateInventory();
+            }
         });
     });
 }
@@ -729,24 +796,27 @@ $("#mod-to-acquire").on("input", () => {
 
 const uiConfigs = [
     "autoCreateAccount",
-    "skipStoryModeChoice",
     "skipTutorial",
     "skipAllDialogue",
     "unlockAllScans",
     "unlockAllMissions",
     "unlockAllQuests",
     "completeAllQuests",
-    "infiniteResources",
+    "infiniteCredits",
+    "infinitePlatinum",
+    "infiniteEndo",
+    "infiniteRegalAya",
     "unlockAllShipFeatures",
     "unlockAllShipDecorations",
     "unlockAllFlavourItems",
     "unlockAllSkins",
+    "unlockAllCapturaScenes",
     "universalPolarityEverywhere",
     "spoofMasteryRank"
 ];
 
 function doChangeSettings() {
-    fetch("/custom/config")
+    fetch("/custom/config?" + window.authz)
         .then(response => response.json())
         .then(json => {
             for (const i of uiConfigs) {
@@ -764,7 +834,7 @@ function doChangeSettings() {
                 }
             }
             $.post({
-                url: "/custom/config",
+                url: "/custom/config?" + window.authz,
                 contentType: "text/plain",
                 data: JSON.stringify(json, null, 2)
             });
@@ -774,23 +844,34 @@ function doChangeSettings() {
 // Cheats route
 
 single.getRoute("/webui/cheats").on("beforeload", function () {
-    fetch("/custom/config")
-        .then(response => response.json())
-        .then(json =>
-            Object.entries(json).forEach(entry => {
-                const [key, value] = entry;
-                var x = document.getElementById(`${key}`);
-                if (x != null) {
-                    if (x.type == "checkbox") {
-                        if (value === true) {
-                            x.setAttribute("checked", "checked");
-                        }
-                    } else if (x.type == "number") {
-                        x.setAttribute("value", `${value}`);
-                    }
+    let interval;
+    interval = setInterval(() => {
+        if (window.authz) {
+            clearInterval(interval);
+            fetch("/custom/config?" + window.authz).then(res => {
+                if (res.status == 200) {
+                    $("#server-settings").removeClass("d-none");
+                    res.json().then(json =>
+                        Object.entries(json).forEach(entry => {
+                            const [key, value] = entry;
+                            var x = document.getElementById(`${key}`);
+                            if (x != null) {
+                                if (x.type == "checkbox") {
+                                    if (value === true) {
+                                        x.setAttribute("checked", "checked");
+                                    }
+                                } else if (x.type == "number") {
+                                    x.setAttribute("value", `${value}`);
+                                }
+                            }
+                        })
+                    );
+                } else {
+                    $("#server-settings-no-perms").removeClass("d-none");
                 }
-            })
-        );
+            });
+        }
+    }, 10);
 
     fetch("http://localhost:61558/ping", { mode: "no-cors" })
         .then(() => {
@@ -873,6 +954,12 @@ function unlockFocusSchool(upgradeType) {
                 resolve();
             });
         });
+    });
+}
+
+function doHelminthUnlockAll() {
+    revalidateAuthz(() => {
+        $.post("/api/infestedFoundry.php?" + window.authz + "&mode=custom_unlockall");
     });
 }
 

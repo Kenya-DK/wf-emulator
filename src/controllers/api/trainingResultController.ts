@@ -4,6 +4,7 @@ import { getInventory } from "@/src/services/inventoryService";
 import { IMongoDate } from "@/src/types/commonTypes";
 import { RequestHandler } from "express";
 import { unixTimesInMs } from "@/src/constants/timeConstants";
+import { IInventoryChanges } from "@/src/types/purchaseTypes";
 
 interface ITrainingResultsRequest {
     numLevelsGained: number;
@@ -12,10 +13,9 @@ interface ITrainingResultsRequest {
 interface ITrainingResultsResponse {
     NewTrainingDate: IMongoDate;
     NewLevel: number;
-    InventoryChanges: any[];
+    InventoryChanges: IInventoryChanges;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-misused-promises
 const trainingResultController: RequestHandler = async (req, res): Promise<void> => {
     const accountId = await getAccountIdForRequest(req);
 
@@ -23,9 +23,8 @@ const trainingResultController: RequestHandler = async (req, res): Promise<void>
 
     const inventory = await getInventory(accountId);
 
-    inventory.TrainingDate = new Date(Date.now() + unixTimesInMs.day);
-
     if (trainingResults.numLevelsGained == 1) {
+        inventory.TrainingDate = new Date(Date.now() + unixTimesInMs.hour * 23);
         inventory.PlayerLevel += 1;
     }
 
@@ -36,7 +35,7 @@ const trainingResultController: RequestHandler = async (req, res): Promise<void>
             $date: { $numberLong: changedinventory.TrainingDate.getTime().toString() }
         },
         NewLevel: trainingResults.numLevelsGained == 1 ? changedinventory.PlayerLevel : inventory.PlayerLevel,
-        InventoryChanges: []
+        InventoryChanges: {}
     } satisfies ITrainingResultsResponse);
 };
 

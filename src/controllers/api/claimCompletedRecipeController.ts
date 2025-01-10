@@ -7,13 +7,19 @@ import { getRecipe } from "@/src/services/itemDataService";
 import { IOid } from "@/src/types/commonTypes";
 import { getJSONfromString } from "@/src/helpers/stringHelpers";
 import { getAccountIdForRequest } from "@/src/services/loginService";
-import { getInventory, updateCurrency, addItem, addMiscItems, addRecipes } from "@/src/services/inventoryService";
+import {
+    getInventory,
+    updateCurrency,
+    addItem,
+    addMiscItems,
+    addRecipes,
+    updateCurrencyByAccountId
+} from "@/src/services/inventoryService";
 
 export interface IClaimCompletedRecipeRequest {
     RecipeIds: IOid[];
 }
 
-// eslint-disable-next-line @typescript-eslint/no-misused-promises
 export const claimCompletedRecipeController: RequestHandler = async (req, res) => {
     const claimCompletedRecipeRequest = getJSONfromString(String(req.body)) as IClaimCompletedRecipeRequest;
     const accountId = await getAccountIdForRequest(req);
@@ -24,13 +30,11 @@ export const claimCompletedRecipeController: RequestHandler = async (req, res) =
         recipe => recipe._id?.toString() === claimCompletedRecipeRequest.RecipeIds[0].$oid
     );
     if (!pendingRecipe) {
-        logger.error(`no pending recipe found with id ${claimCompletedRecipeRequest.RecipeIds[0].$oid}`);
         throw new Error(`no pending recipe found with id ${claimCompletedRecipeRequest.RecipeIds[0].$oid}`);
     }
 
     //check recipe is indeed ready to be completed
     // if (pendingRecipe.CompletionDate > new Date()) {
-    //     logger.error(`recipe ${pendingRecipe._id} is not ready to be completed`);
     //     throw new Error(`recipe ${pendingRecipe._id} is not ready to be completed`);
     // }
 
@@ -39,14 +43,12 @@ export const claimCompletedRecipeController: RequestHandler = async (req, res) =
 
     const recipe = getRecipe(pendingRecipe.ItemType);
     if (!recipe) {
-        logger.error(`no completed item found for recipe ${pendingRecipe._id}`);
-        throw new Error(`no completed item found for recipe ${pendingRecipe._id}`);
+        throw new Error(`no completed item found for recipe ${pendingRecipe._id.toString()}`);
     }
 
     if (req.query.cancel) {
-        const currencyChanges = await updateCurrency(recipe.buildPrice * -1, false, accountId);
-
         const inventory = await getInventory(accountId);
+        const currencyChanges = updateCurrency(inventory, recipe.buildPrice * -1, false);
         addMiscItems(inventory, recipe.ingredients);
         await inventory.save();
 
@@ -57,6 +59,30 @@ export const claimCompletedRecipeController: RequestHandler = async (req, res) =
         });
     } else {
         logger.debug("Claiming Recipe", { recipe, pendingRecipe });
+
+        if (recipe.secretIngredientAction == "SIA_SPECTRE_LOADOUT_COPY") {
+            const inventory = await getInventory(accountId);
+            inventory.PendingSpectreLoadouts ??= [];
+            inventory.SpectreLoadouts ??= [];
+
+            const pendingLoadoutIndex = inventory.PendingSpectreLoadouts.findIndex(
+                x => x.ItemType == recipe.resultType
+            );
+            if (pendingLoadoutIndex != -1) {
+                const loadoutIndex = inventory.SpectreLoadouts.findIndex(x => x.ItemType == recipe.resultType);
+                if (loadoutIndex != -1) {
+                    inventory.SpectreLoadouts.splice(loadoutIndex, 1);
+                }
+                logger.debug(
+                    "moving spectre loadout from pending to active",
+                    inventory.toJSON().PendingSpectreLoadouts![pendingLoadoutIndex]
+                );
+                inventory.SpectreLoadouts.push(inventory.PendingSpectreLoadouts[pendingLoadoutIndex]);
+                inventory.PendingSpectreLoadouts.splice(pendingLoadoutIndex, 1);
+                await inventory.save();
+            }
+        }
+
         let InventoryChanges = {};
         if (recipe.consumeOnUse) {
             const recipeChanges = [
@@ -75,14 +101,15 @@ export const claimCompletedRecipeController: RequestHandler = async (req, res) =
         if (req.query.rush) {
             InventoryChanges = {
                 ...InventoryChanges,
-                ...(await updateCurrency(recipe.skipBuildTimePrice, true, accountId))
+                ...(await updateCurrencyByAccountId(recipe.skipBuildTimePrice, true, accountId))
             };
         }
-        res.json({
-            InventoryChanges: {
-                ...InventoryChanges,
-                ...(await addItem(accountId, recipe.resultType, recipe.num)).InventoryChanges
-            }
-        });
+        const inventory = await getInventory(accountId);
+        InventoryChanges = {
+            ...InventoryChanges,
+            ...(await addItem(inventory, recipe.resultType, recipe.num)).InventoryChanges
+        };
+        await inventory.save();
+        res.json({ InventoryChanges });
     }
 };

@@ -9,10 +9,9 @@ export interface IGuild {
 export interface IGuildDatabase extends IGuild {
     _id: Types.ObjectId;
     DojoComponents?: IDojoComponentDatabase[];
-}
-
-export interface ICreateGuildRequest {
-    guildName: string;
+    DojoCapacity: number;
+    DojoEnergy: number;
+    TechProjects?: ITechProjectDatabase[];
 }
 
 export interface IDojoClient {
@@ -30,7 +29,7 @@ export interface IDojoClient {
 
 export interface IDojoComponentClient {
     id: IOid;
-    pf: string;
+    pf: string; // Prefab (.level)
     ppf: string;
     pi?: IOid; // Parent ID. N/A to root.
     op?: string; // "Open Portal"? N/A to root.
@@ -46,4 +45,16 @@ export interface IDojoComponentDatabase
     _id: Types.ObjectId;
     pi?: Types.ObjectId;
     CompletionTime?: Date;
+}
+
+export interface ITechProjectClient {
+    ItemType: string;
+    ReqCredits: number;
+    ReqItems: IMiscItem[];
+    State: number; // 0 = pending, 1 = complete
+    CompletionDate?: IMongoDate;
+}
+
+export interface ITechProjectDatabase extends Omit<ITechProjectClient, "CompletionDate"> {
+    CompletionDate?: Date;
 }

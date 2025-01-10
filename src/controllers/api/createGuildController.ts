@@ -3,10 +3,8 @@ import { getAccountIdForRequest } from "@/src/services/loginService";
 import { getJSONfromString } from "@/src/helpers/stringHelpers";
 import { Inventory } from "@/src/models/inventoryModels/inventoryModel";
 import { Guild } from "@/src/models/guildModel";
-import { ICreateGuildRequest } from "@/src/types/guildTypes";
 
-// eslint-disable-next-line @typescript-eslint/no-misused-promises
-const createGuildController: RequestHandler = async (req, res) => {
+export const createGuildController: RequestHandler = async (req, res) => {
     const accountId = await getAccountIdForRequest(req);
     const payload = getJSONfromString(String(req.body)) as ICreateGuildRequest;
 
@@ -35,4 +33,6 @@ const createGuildController: RequestHandler = async (req, res) => {
     res.json(guild);
 };
 
-export { createGuildController };
+interface ICreateGuildRequest {
+    guildName: string;
+}

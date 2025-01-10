@@ -5,30 +5,31 @@ import { getAccountIdForRequest } from "@/src/services/loginService";
 import { getPersonalRooms } from "@/src/services/personalRoomsService";
 import { getShip } from "@/src/services/shipService";
 import { Loadout } from "@/src/models/inventoryModels/loadoutModel";
-import { logger } from "@/src/utils/logger";
 import { toOid } from "@/src/helpers/inventoryHelpers";
 import { IGetShipResponse } from "@/src/types/shipTypes";
+import { IPersonalRooms } from "@/src/types/personalRoomsTypes";
 
-// eslint-disable-next-line @typescript-eslint/no-misused-promises
 export const getShipController: RequestHandler = async (req, res) => {
     const accountId = await getAccountIdForRequest(req);
-    const personalRooms = await getPersonalRooms(accountId);
+    const personalRoomsDb = await getPersonalRooms(accountId);
+    const personalRooms = personalRoomsDb.toJSON<IPersonalRooms>();
     const loadout = await getLoadout(accountId);
-    const ship = await getShip(personalRooms.activeShipId, "ShipInteriorColors ShipAttachments SkinFlavourItem");
+    const ship = await getShip(personalRoomsDb.activeShipId, "ShipAttachments SkinFlavourItem");
 
     const getShipResponse: IGetShipResponse = {
         ShipOwnerId: accountId,
         LoadOutInventory: { LoadOutPresets: loadout.toJSON() },
         Ship: {
-            ...personalRooms.toJSON().Ship,
-            ShipId: toOid(personalRooms.activeShipId),
+            ...personalRooms.Ship,
+            ShipId: toOid(personalRoomsDb.activeShipId),
             ShipInterior: {
-                Colors: ship.ShipInteriorColors,
+                Colors: personalRooms.ShipInteriorColors,
                 ShipAttachments: ship.ShipAttachments,
                 SkinFlavourItem: ship.SkinFlavourItem
             }
         },
-        Apartment: personalRooms.Apartment
+        Apartment: personalRooms.Apartment,
+        TailorShop: personalRooms.TailorShop
     };
 
     if (config.unlockAllShipFeatures) {
@@ -42,8 +43,7 @@ export const getLoadout = async (accountId: string) => {
     const loadout = await Loadout.findOne({ loadoutOwnerId: accountId });
 
     if (!loadout) {
-        logger.error(`loadout not found for account ${accountId}`);
-        throw new Error("loadout not found");
+        throw new Error(`loadout not found for account ${accountId}`);
     }
 
     return loadout;

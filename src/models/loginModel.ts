@@ -1,4 +1,4 @@
-import { IDatabaseAccountDocument } from "@/src/types/loginTypes";
+import { IDatabaseAccountJson } from "@/src/types/loginTypes";
 import { model, Schema, SchemaOptions } from "mongoose";
 
 const opts = {
@@ -20,11 +20,11 @@ const opts = {
 //   }
 // }
 
-const databaseAccountSchema = new Schema<IDatabaseAccountDocument>(
+const databaseAccountSchema = new Schema<IDatabaseAccountJson>(
     {
         email: { type: String, required: true, unique: true },
         password: { type: String, required: true },
-        DisplayName: { type: String, required: true },
+        DisplayName: { type: String, required: true, unique: true },
         CountryCode: { type: String, required: true },
         ClientType: { type: String },
         CrossPlatformAllowed: { type: Boolean, required: true },
@@ -33,7 +33,8 @@ const databaseAccountSchema = new Schema<IDatabaseAccountDocument>(
         AmazonRefreshToken: { type: String },
         ConsentNeeded: { type: Boolean, required: true },
         TrackedSettings: { type: [String], default: [] },
-        Nonce: { type: Number, default: 0 }
+        Nonce: { type: Number, default: 0 },
+        LastLoginDay: { type: Number }
     },
     opts
 );
@@ -47,4 +48,4 @@ databaseAccountSchema.set("toJSON", {
     virtuals: true
 });
 
-export const Account = model<IDatabaseAccountDocument>("Account", databaseAccountSchema);
+export const Account = model<IDatabaseAccountJson>("Account", databaseAccountSchema);

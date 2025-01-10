@@ -4,7 +4,6 @@ import { Guild } from "@/src/models/guildModel";
 import { IDojoClient, IDojoComponentClient } from "@/src/types/guildTypes";
 import { toOid, toMongoDate } from "@/src/helpers/inventoryHelpers";
 
-// eslint-disable-next-line @typescript-eslint/no-misused-promises
 export const getGuildDojoController: RequestHandler = async (req, res) => {
     const guildId = req.query.guildId as string;
 
@@ -34,8 +33,8 @@ export const getGuildDojoController: RequestHandler = async (req, res) => {
         FixedContributions: true,
         DojoRevision: 1,
         RevisionTime: Math.round(Date.now() / 1000),
-        Energy: 5,
-        Capacity: 100,
+        Energy: guild.DojoEnergy,
+        Capacity: guild.DojoCapacity,
         DojoRequestStatus: 0,
         DojoComponents: []
     };

@@ -1,3 +1,5 @@
+import { IInfestedFoundry } from "./inventoryTypes/inventoryTypes";
+
 export interface IPurchaseRequest {
     PurchaseParams: IPurchaseParams;
     buildLabel: string;
@@ -5,6 +7,7 @@ export interface IPurchaseRequest {
 
 export interface IPurchaseParams {
     Source: number;
+    SourceId?: string; // for Source 7 & 18
     StoreItem: string;
     StorePage: string;
     SearchTerm: string;
@@ -12,9 +15,31 @@ export interface IPurchaseParams {
     Quantity: number;
     UsePremium: boolean;
     ExpectedPrice: number;
+    SyndicateTag?: string; // for Source 2
+    UseFreeFavor?: boolean; // for Source 2
 }
 
-export type IInventoryChanges = Record<string, IBinChanges | object[]>;
+export interface ICurrencyChanges {
+    RegularCredits?: number;
+    PremiumCredits?: number;
+    PremiumCreditsFree?: number;
+}
+
+export type IInventoryChanges = {
+    [_ in SlotNames]?: IBinChanges;
+} & ICurrencyChanges & { InfestedFoundry?: IInfestedFoundry } & Record<
+        string,
+        IBinChanges | number | object[] | IInfestedFoundry
+    >;
+
+export interface IPurchaseResponse {
+    InventoryChanges: IInventoryChanges;
+    Standing?: {
+        Tag: string;
+        Standing: number;
+    }[];
+    BoosterPackItems?: string;
+}
 
 export type IBinChanges = {
     count: number;

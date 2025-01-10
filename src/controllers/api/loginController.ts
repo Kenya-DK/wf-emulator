@@ -1,31 +1,40 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { RequestHandler } from "express";
 
 import { config } from "@/src/services/configService";
-import buildConfig from "@/static/data/buildConfig.json";
+import { buildConfig } from "@/src/services/buildConfigService";
 
-import { toLoginRequest } from "@/src/helpers/loginHelpers";
 import { Account } from "@/src/models/loginModel";
-import { createAccount, isCorrectPassword } from "@/src/services/loginService";
-import { ILoginResponse } from "@/src/types/loginTypes";
+import { createAccount, isCorrectPassword, isNameTaken } from "@/src/services/loginService";
+import { IDatabaseAccountJson, ILoginRequest, ILoginResponse } from "@/src/types/loginTypes";
 import { DTLS, groups, HUB, platformCDNs } from "@/static/fixed_responses/login_static";
 import { logger } from "@/src/utils/logger";
 
-// eslint-disable-next-line @typescript-eslint/no-misused-promises
-const loginController: RequestHandler = async (request, response) => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument
-    const body = JSON.parse(request.body); // parse octet stream of json data to json object
-    const loginRequest = toLoginRequest(body);
+export const loginController: RequestHandler = async (request, response) => {
+    const loginRequest = JSON.parse(String(request.body)) as ILoginRequest; // parse octet stream of json data to json object
 
     const account = await Account.findOne({ email: loginRequest.email }); //{ _id: 0, __v: 0 }
     const nonce = Math.round(Math.random() * Number.MAX_SAFE_INTEGER);
 
+    const buildLabel: string =
+        typeof request.query.buildLabel == "string"
+            ? request.query.buildLabel.split(" ").join("+")
+            : buildConfig.buildLabel;
+
     if (!account && config.autoCreateAccount && loginRequest.ClientType != "webui") {
         try {
+            const nameFromEmail = loginRequest.email.substring(0, loginRequest.email.indexOf("@"));
+            let name = nameFromEmail;
+            if (await isNameTaken(name)) {
+                let suffix = 0;
+                do {
+                    ++suffix;
+                    name = nameFromEmail + suffix;
+                } while (await isNameTaken(name));
+            }
             const newAccount = await createAccount({
                 email: loginRequest.email,
                 password: loginRequest.password,
-                DisplayName: loginRequest.email.substring(0, loginRequest.email.indexOf("@")),
+                DisplayName: name,
                 CountryCode: loginRequest.lang.toUpperCase(),
                 ClientType: loginRequest.ClientType,
                 CrossPlatformAllowed: true,
@@ -35,21 +44,7 @@ const loginController: RequestHandler = async (request, response) => {
                 Nonce: nonce
             });
             logger.debug("created new account");
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const { email, password, ...databaseAccount } = newAccount;
-            const newLoginResponse: ILoginResponse = {
-                ...databaseAccount,
-                Groups: groups,
-                platformCDNs: platformCDNs,
-                NRS: [config.myAddress],
-                DTLS: DTLS,
-                IRC: config.myIrcAddresses ?? [config.myAddress],
-                HUB: HUB,
-                BuildLabel: buildConfig.buildLabel,
-                MatchmakingBuildId: buildConfig.matchmakingBuildId
-            };
-
-            response.json(newLoginResponse);
+            response.json(createLoginResponse(newAccount, buildLabel));
             return;
         } catch (error: unknown) {
             if (error instanceof Error) {
@@ -72,20 +67,29 @@ const loginController: RequestHandler = async (request, response) => {
     }
     await account.save();
 
-    const { email, password, ...databaseAccount } = account.toJSON();
-    const newLoginResponse: ILoginResponse = {
-        ...databaseAccount,
+    response.json(createLoginResponse(account.toJSON(), buildLabel));
+};
+
+const createLoginResponse = (account: IDatabaseAccountJson, buildLabel: string): ILoginResponse => {
+    return {
+        id: account.id,
+        DisplayName: account.DisplayName,
+        CountryCode: account.CountryCode,
+        ClientType: account.ClientType,
+        CrossPlatformAllowed: account.CrossPlatformAllowed,
+        ForceLogoutVersion: account.ForceLogoutVersion,
+        AmazonAuthToken: account.AmazonAuthToken,
+        AmazonRefreshToken: account.AmazonRefreshToken,
+        ConsentNeeded: account.ConsentNeeded,
+        TrackedSettings: account.TrackedSettings,
+        Nonce: account.Nonce,
         Groups: groups,
         platformCDNs: platformCDNs,
         NRS: [config.myAddress],
         DTLS: DTLS,
         IRC: config.myIrcAddresses ?? [config.myAddress],
         HUB: HUB,
-        BuildLabel: buildConfig.buildLabel,
+        BuildLabel: buildLabel,
         MatchmakingBuildId: buildConfig.matchmakingBuildId
     };
-
-    response.json(newLoginResponse);
 };
-
-export { loginController };
